@@ -2,18 +2,28 @@ import sys
 from paithon.utils.core import AbstractMethodError
 
 
-class ProgressBroadcaster(object):
-    def trigger_task_start(self, length, task, params):
-        pass
+class TaskProgressBroadcaster(object):
+
+    def __init__(self):
+        self._task_progress_listeners = []
+
+    def trigger_task_start(self, length, task, params=None):
+        for l in self._task_progress_listeners:
+            l.on_start(length, task, params)
 
     def trigger_task_progress(self, progress, task):
-        pass
+        for l in self._task_progress_listeners:
+            l.on_progress(progress, task)
 
     def trigger_task_end(self, task):
-        pass
+        for l in self._task_progress_listeners:
+            l.on_end(task)
+
+    def register_task_progress_listener(self, listener):
+        self._task_progress_listeners.append(listener)
 
 
-class ProgressEventListener(object):
+class TaskProgressEventListener(object):
     def on_start(self, length, task, params):
         raise AbstractMethodError()
 
@@ -35,7 +45,7 @@ class TaskProgress(object):
         self._progress = progress
 
 
-class BaseProgressor(ProgressEventListener):
+class BaseTaskProgressor(TaskProgressEventListener):
     def __init__(self):
         self._events = []
 
@@ -55,7 +65,7 @@ class BaseProgressor(ProgressEventListener):
         self.on_end(task)
 
 
-class DummyProgressor(BaseProgressor):
+class DummyTaskProgressor(BaseTaskProgressor):
     def on_start(self, length, name, params):
         pass
 
@@ -66,9 +76,9 @@ class DummyProgressor(BaseProgressor):
         pass
 
 
-class StdoutProgressor(BaseProgressor):
+class StdoutTaskProgressor(BaseTaskProgressor):
     def on_start(self, length, task, params):
-        super(StdoutProgressor, self).on_start(length, task, params)
+        super(StdoutTaskProgressor, self).on_start(length, task, params)
         sys.stdout.write('%s... ' % self.get_name())
         sys.stdout.flush()
 
@@ -81,7 +91,7 @@ class StdoutProgressor(BaseProgressor):
                     or new_percent_progress == 0):
             sys.stdout.write(self.get_progressbar_str(new_percent_progress))
             sys.stdout.flush()
-        super(StdoutProgressor, self).on_progress(progress, task)
+        super(StdoutTaskProgressor, self).on_progress(progress, task)
 
     def get_name(self):
         event = self._events[-1]

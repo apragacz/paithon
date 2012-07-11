@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from paithon.utils.core import AbstractMethodError
-from paithon.utils.progressors import ProgressBroadcaster
+from paithon.utils.progressors import TaskProgressBroadcaster
 
 
 class ClassifierParams(dict):
@@ -10,11 +10,13 @@ class ClassifierParams(dict):
 
 TASK_CLASSIFY = 'classifier_classify'
 TASK_CV_TRAIN = 'classifier_crossvalidation_train'
+TASK_CV_TEST = 'classifier_crossvalidation_test'
 TASK_RANKING = 'classifier_ranking_calculation'
 
 
-class Classifier(ProgressBroadcaster):
+class Classifier(TaskProgressBroadcaster):
     def __init__(self, table=None, decision_index=0, **kwargs):
+        super(Classifier).__init__()
         self.init(**kwargs)
         if table is not None:
             self.train(table, decision_index)
@@ -53,9 +55,11 @@ class Classifier(ProgressBroadcaster):
             train_table = table.join_tables(*train_tables)
             classifier.train(train_table, decision_index=decision_index)
             self.trigger_task_end(TASK_CV_TRAIN)
+            self.trigger_task_start(len(test_table), TASK_CV_TEST, (i + 1))
             decisions = classifier.decisions(test_table)
             for j, ((__, y), c) in enumerate(zip(test_table, decisions)):
                 evaluation[y[decision_index]][c] += 1
+            self.trigger_task_end(TASK_CV_TEST)
 
         return evaluation
 
@@ -72,7 +76,7 @@ class BinaryClassifier(Classifier):
                                                 **kwargs)
 
     def rank_record(self, record, header):
-        raise NotImplemented
+        raise AbstractMethodError()
 
     def classify_record(self, record, header):
         return (self.positive_decision
