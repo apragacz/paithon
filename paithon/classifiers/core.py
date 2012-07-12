@@ -8,6 +8,7 @@ class ClassifierParams(dict):
     pass
 
 
+TASK_TRAIN = 'classifier_train'
 TASK_CLASSIFY = 'classifier_classify'
 TASK_CV_TRAIN = 'classifier_crossvalidation_train'
 TASK_CV_TEST = 'classifier_crossvalidation_test'
@@ -15,37 +16,37 @@ TASK_RANKING = 'classifier_ranking_calculation'
 
 
 class Classifier(TaskProgressBroadcaster):
-    def __init__(self, table=None, decision_index=0, **kwargs):
+    def __init__(self, table=None, **kwargs):
         super(Classifier).__init__()
         self.init(**kwargs)
+        self._params = ClassifierParams()
         if table is not None:
-            self.train(table, decision_index)
+            self.train(table)
 
     def init(self):
         pass
 
     def get_params(self):
-        return ClassifierParams()
+        return self._params
 
     def set_params(self, params):
-        pass
+        self._params = params
 
-    def train(self, table, decision_index=0):
+    def train(self, table):
         raise AbstractMethodError()
 
     def classify_record(self, record, header):
         raise AbstractMethodError()
 
-    def decisions(self, table):
+    def classify(self, table):
         self.trigger_task_start(len(table), TASK_CLASSIFY)
         for i, record in enumerate(table):
             yield self.classify_record(record, table.header)
             self.trigger_task_progress(i + 1, TASK_CLASSIFY)
         self.trigger_task_end(TASK_CLASSIFY)
 
-    def crossvalidate(self, table, fold_number=10, decision_index=0):
+    def crossvalidate(self, table, fold_number=10):
         parts = table.split_into_parts(fold_number)
-        print parts
         evaluation = defaultdict(lambda: defaultdict(int))
         classifier = self
         for i in range(fold_number):
@@ -53,12 +54,12 @@ class Classifier(TaskProgressBroadcaster):
             self.trigger_task_start(len(test_table), TASK_CV_TRAIN, (i + 1))
             train_tables = [part for j, part in enumerate(parts) if j != i]
             train_table = table.join_tables(*train_tables)
-            classifier.train(train_table, decision_index=decision_index)
+            classifier.train(train_table)
             self.trigger_task_end(TASK_CV_TRAIN)
             self.trigger_task_start(len(test_table), TASK_CV_TEST, (i + 1))
-            decisions = classifier.decisions(test_table)
+            decisions = classifier.classify(test_table)
             for j, ((__, y), c) in enumerate(zip(test_table, decisions)):
-                evaluation[y[decision_index]][c] += 1
+                evaluation[y[0]][c] += 1
             self.trigger_task_end(TASK_CV_TEST)
 
         return evaluation
