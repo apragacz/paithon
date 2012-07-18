@@ -1,17 +1,67 @@
-def mean(values, default=None):
-    if values:
-        return sum(values) / len(values)
+import math
+from collections import Counter
+
+
+def collection(x):
+    if hasattr(x, '__len__'):
+        return x
     else:
-        return default
+        return list(x)
 
 
-def variance(values, default=None):
-    if values:
-        sum((x ** 2 for x in values)) / len(values) - mean(values) ** 2
-    else:
-        return default
+def mean(values):
+    assert(values)
+    values = collection(values)
+    return sum(values) / len(values)
 
 
-def mean_and_variance(values, default=None):
-    values = list(values)
-    return (mean(values, default), variance(values, default))
+def variance(values):
+    assert(values)
+    values = collection(values)
+    sum((x ** 2 for x in values)) / len(values) - mean(values) ** 2
+
+
+def mean_and_variance(values):
+    values = collection(values)
+    return (mean(values), variance(values))
+
+
+def pearlson_correlation(values1, values2):
+    values1 = collection(values1)
+    values2 = collection(values2)
+    sum1 = sum(values1)
+    sum2 = sum(values2)
+    sum_sq1 = sum((x ** 2 for x in values1))
+    sum_sq2 = sum((x ** 2 for x in values2))
+    var1 = sum_sq1 - sum1 ** 2
+    var2 = sum_sq2 - sum2 ** 2
+    dot_product = sum((x1 * x2 for x1, x2 in zip(values1, values2)))
+
+    num = dot_product - (sum1 * sum2)
+    den = math.sqrt(var1 * var2)
+    return num / den
+
+
+def distribution(values):
+    distribution = {}
+    c = Counter(values)
+    total_counter = float(sum((counter for _, counter in  c.most_common())))
+    for value, counter in c.most_common():
+        distribution[value] = counter / total_counter
+    return distribution
+
+
+def distribution_entropy(distribution, r=2):
+    return - sum((math.log(p, r) * p for _, p in distribution))
+
+
+def distribution_gini(distribution):
+    return 1 - sum((p ** 2 for _, p in distribution))
+
+
+def entropy(values):
+    return distribution_entropy(distribution(values))
+
+
+def gini(values):
+    return distribution_gini(distribution(values))
