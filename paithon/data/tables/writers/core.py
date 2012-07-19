@@ -1,4 +1,4 @@
-from paithon.utils.core import AbstractMethodError
+from paithon.core.exceptions import AbstractMethodError
 
 
 class RecordWriter(object):

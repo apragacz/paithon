@@ -45,6 +45,7 @@ class Table(object):
         self.set_header(reader.read_header())
         for record in reader:
             self.add_record(record)
+        self._header.load_values(self)
 
     def write(self, writer):
         writer.write_header(self._header)

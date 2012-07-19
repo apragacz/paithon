@@ -30,11 +30,11 @@ class AbstractColumnInfo(object):
         raise AbstractMethodError()
 
     @property
-    def is_discrete(self):
+    def discrete(self):
         raise AbstractMethodError()
 
     @property
-    def is_numeric(self):
+    def numeric(self):
         raise AbstractMethodError()
 
 
@@ -45,6 +45,9 @@ class NominalColumnInfo(AbstractColumnInfo):
     def load_values(self, values):
         self._values = set(values)
 
+    def to_python(self, input_value):
+        return str(input_value)
+
     def __eq__(self, value):
         if hasattr(value, '_values'):
             return (self._values == value._values)
@@ -55,36 +58,45 @@ class NominalColumnInfo(AbstractColumnInfo):
         return COLUMN_TYPE_NOMINAL
 
     @property
-    def is_discrete(self):
+    def discrete(self):
         return True
 
     @property
-    def is_numeric(self):
+    def numeric(self):
         return False
+
+    @property
+    def values(self):
+        return self._values
 
 
 class StringColumnInfo(AbstractColumnInfo):
     def initialize(self):
-        pass
+        self._values_lengths = {}
 
     def load_values(self, values):
-        self._values = set(values)
+        for value in values:
+            k = len(value)
+            self._values_lengths[k] = self._values_lengths.setdefault(k, 0) + 1
+
+    def to_python(self, input_value):
+        return str(input_value)
 
     def __eq__(self, value):
-        if hasattr(value, '_values'):
-            return (self._values == value._values)
+        if hasattr(value, '_values_lengths'):
+            return (self._values_lengths == value._values_lengths)
         return False
 
     @property
     def column_type(self):
-        return COLUMN_TYPE_NOMINAL
+        return COLUMN_TYPE_STRING
 
     @property
-    def is_discrete(self):
+    def discrete(self):
         return False
 
     @property
-    def is_numeric(self):
+    def numeric(self):
         return False
 
 
@@ -95,6 +107,9 @@ class NumericColumnInfo(AbstractColumnInfo):
 
     def load_values(self, values):
         self._mean, self._variance = mean_and_variance(values)
+
+    def to_python(self, input_value):
+        return float(input_value)
 
     def __eq__(self, value):
         if hasattr(value, '_mean') and hasattr(value, '_variance'):
@@ -107,9 +122,40 @@ class NumericColumnInfo(AbstractColumnInfo):
         return COLUMN_TYPE_NUMERIC
 
     @property
-    def is_discrete(self):
+    def discrete(self):
         return False
 
     @property
-    def is_numeric(self):
+    def numeric(self):
         return True
+
+
+class IntegerColumnInfo(NumericColumnInfo):
+    def to_python(self, input_value):
+        return int(input_value)
+
+
+class Header(object):
+    def __init__(self, column_infos=None, record_len=0,
+                    constructor=lambda name: StringColumnInfo(name)):
+        if column_infos:
+            self._column_infos = column_infos
+        else:
+            self._column_infos = [constructor('A%d' % (i + 1))
+                                for i in range(record_len)]
+
+    def __eq__(self, value):
+        if hasattr(value, '_column_infos'):
+            return (self._column_infos == value._column_infos)
+        return False
+
+    @property
+    def column_infos(self):
+        return self._column_infos
+
+    def load_values_by_index(self, index, values):
+        self._column_infos[index].load_values(values)
+
+    def validate(self, record):
+        if len(record) != len(self._column_infos):
+            raise HeaderValidationError('invalid record length')
