@@ -8,11 +8,12 @@ class AbstractRecordCSVReader(RecordReader):
     def column_info(self, index):
         raise AbstractMethodError()
 
-    def __init__(self, filename):
+    def __init__(self, filename, separator=','):
         self._header = None
         self._record_cache = None
         self._filename = filename
         self._f = open(filename, 'rU')
+        self._sep = separator
 
     def read_header(self):
         if self._header is None:
@@ -32,7 +33,7 @@ class AbstractRecordCSVReader(RecordReader):
         if not line:
             return None
         record = [self.to_python(item.strip(), i)
-                    for i, item in enumerate(line.split(','))]
+                    for i, item in enumerate(line.split(self._sep))]
         return record
 
     def read_record(self):
