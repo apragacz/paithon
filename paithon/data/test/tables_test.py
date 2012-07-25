@@ -40,3 +40,16 @@ class TablesTestCase(TestCase):
         self.assertEqual(table2[1], ('3', '4', 'N'))
         self.assertEqual(len(table.sample_without_replacement(2)), 2)
         self.assertEqual(len(table.sample_with_replacement(2)), 2)
+
+        split1 = table.split_by_column_values(0)
+        self.assertEqual(len(split1), 5)
+
+        split2 = table.split_by_column_values(1)
+        self.assertEqual(len(split2), 2)
+        self.assertEqual(len(split2['2']), 2)
+        self.assertEqual(len(split2['4']), 3)
+
+        split3 = table.split_by_column_values(2)
+        self.assertEqual(len(split3), 2)
+        self.assertEqual(len(split3['Y']), 2)
+        self.assertEqual(len(split3['N']), 3)

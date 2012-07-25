@@ -1,5 +1,4 @@
 import random
-from collections import defaultdict
 from paithon.data.tables.headers import Header
 
 
@@ -63,10 +62,13 @@ class Table(object):
     def split_by_column_values(self, column_index, table_class=None):
         if table_class is None:
             table_class = self.__class__
-        sp = defaultdict(lambda: table_class(header=self._header))
+        sp = {}
 
-        for record in self.data:
-            sp[record[column_index]].add_record(record)
+        for record in self._data:
+            value = record[column_index]
+            if value not in sp:
+                sp[value] = table_class(header=self._header)
+            sp[value].add_record(record)
 
         return sp
 
