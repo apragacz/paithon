@@ -1,5 +1,5 @@
 from paithon.core.exceptions import AbstractMethodError, ValidationError
-from paithon.utils.stat import mean_and_variance
+from paithon.core.stat import mean_and_variance
 
 
 class HeaderValidationError(ValidationError):
@@ -159,3 +159,9 @@ class Header(object):
     def validate(self, record):
         if len(record) != len(self._column_infos):
             raise HeaderValidationError('invalid record length')
+
+    def to_python_by_index(self, index, value):
+        return self._column_infos[index].to_python(value)
+
+    def __len__(self):
+        return len(self._column_infos)

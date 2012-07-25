@@ -1,6 +1,6 @@
 from paithon.core.exceptions import AbstractMethodError
-from paihton.data.tables.readers.core import RecordReader
-from paihton.data.tables.headers import (Header, NumericColumnInfo,
+from paithon.data.tables.readers.base import RecordReader
+from paithon.data.tables.headers import (Header, NumericColumnInfo,
     NominalColumnInfo)
 
 
@@ -36,9 +36,9 @@ class AbstractRecordCSVReader(RecordReader):
         line = self._f.readline()
         if not line:
             return None
-        record = [self.to_python(item.strip(), i)
+        record_elems = [self.to_python(item.strip(), i)
                     for i, item in enumerate(line.split(self._sep))]
-        return record
+        return tuple(record_elems)
 
     def read_record(self):
         if self._record_cache is not None:
@@ -54,7 +54,7 @@ class AbstractRecordCSVReader(RecordReader):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def next(self):
         record = self.read_record()
         if record is None:
             raise StopIteration()

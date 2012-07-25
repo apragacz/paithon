@@ -4,8 +4,8 @@ from paithon.data.tables.headers import Header
 
 
 class Table(object):
-    def __init__(self, header=None):
-        self._data = []
+    def __init__(self, data=None, header=None):
+        self._data = data if data else []
         self._header = header if header is not None else Header()
         self._decision_index = None
 
@@ -16,8 +16,10 @@ class Table(object):
         return len(self._data)
 
     def __getitem__(self, key):
-        print key
-        return self._data[key]
+        if isinstance(key, slice):
+            return self.__class__(data=self._data[key], header=self._header)
+        else:
+            return self._data[key]
 
     def set_decision_index(self, index):
         self._decision_index = index
@@ -45,12 +47,18 @@ class Table(object):
         self.set_header(reader.read_header())
         for record in reader:
             self.add_record(record)
-        self._header.load_values(self)
+
+        for index in range(len(self._header)):
+            self._header.load_values_by_index(index, self.column_values(index))
 
     def write(self, writer):
         writer.write_header(self._header)
         for record in self._data:
             writer.write_record(record)
+
+    def column_values(self, index):
+        for record in self._data:
+            yield record[index]
 
     def split_by_column_values(self, column_index, table_class=None):
         if table_class is None:
