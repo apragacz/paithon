@@ -1,7 +1,8 @@
 from collections import defaultdict
 
-from paithon.utils.core import AbstractMethodError
-from paithon.utils.progressors import TaskProgressBroadcaster
+from paithon.core.exceptions import AbstractMethodError
+from paithon.core.events import EventDispatcherMixin
+from paithon.core.taskinfos import TaskInfo, EVENT_TASK_INFO_CREATED
 
 
 class ClassifierParams(dict):
@@ -10,20 +11,21 @@ class ClassifierParams(dict):
 
 TASK_TRAIN = 'classifier_train'
 TASK_CLASSIFY = 'classifier_classify'
+TASK_CV = 'classifier_crossvalidation'
 TASK_CV_TRAIN = 'classifier_crossvalidation_train'
 TASK_CV_TEST = 'classifier_crossvalidation_test'
 TASK_RANKING = 'classifier_ranking_calculation'
 
 
-class Classifier(TaskProgressBroadcaster):
+class Classifier(EventDispatcherMixin):
     def __init__(self, table=None, **kwargs):
         super(Classifier).__init__()
-        self.init(**kwargs)
         self._params = ClassifierParams()
+        self.init(**kwargs)
         if table is not None:
             self.train(table)
 
-    def init(self):
+    def init(self, **kwargs):
         pass
 
     def get_params(self):
@@ -39,29 +41,45 @@ class Classifier(TaskProgressBroadcaster):
         raise AbstractMethodError()
 
     def classify(self, table):
-        self.trigger_task_start(len(table), TASK_CLASSIFY)
+        task_info = TaskInfo(TASK_CLASSIFY, len(table))
+        self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=task_info)
+        task_info.signal_start()
         for i, record in enumerate(table):
             yield self.classify_record(record, table.header)
-            self.trigger_task_progress(i + 1, TASK_CLASSIFY)
-        self.trigger_task_end(TASK_CLASSIFY)
+            task_info.signal_progress(i + 1)
+        task_info.signal_end()
 
     def crossvalidate(self, table, fold_number=10):
+        cv_task_info = TaskInfo(TASK_CV, fold_number)
+        self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=cv_task_info)
         parts = table.split_into_parts(fold_number)
         evaluation = defaultdict(lambda: defaultdict(int))
         classifier = self
+        cv_task_info.signal_start()
         for i in range(fold_number):
             test_table = parts[i]
-            self.trigger_task_start(len(test_table), TASK_CV_TRAIN, (i + 1))
             train_tables = [part for j, part in enumerate(parts) if j != i]
             train_table = table.join_tables(*train_tables)
+
+            train_task_info = TaskInfo(TASK_CV_TRAIN, len(train_table),
+                                        {'phase': i + 1})
+            self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=train_task_info)
+            train_task_info.signal_begin()
             classifier.train(train_table)
-            self.trigger_task_end(TASK_CV_TRAIN)
-            self.trigger_task_start(len(test_table), TASK_CV_TEST, (i + 1))
+            train_task_info.signal_end()
+
+            test_task_info = TaskInfo(TASK_CV_TEST, len(test_table),
+                                        {'phase': i + 1})
+            self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=test_task_info)
+            test_task_info.signal_start()
             decisions = classifier.classify(test_table)
             for j, ((__, y), c) in enumerate(zip(test_table, decisions)):
                 evaluation[y[0]][c] += 1
-            self.trigger_task_end(TASK_CV_TEST)
+                test_task_info.signal_progress(j + 1)
+            test_task_info.signal_end()
+            cv_task_info.signal_progress(i + 1)
 
+        cv_task_info.signal_end()
         return evaluation
 
 
@@ -85,11 +103,13 @@ class BinaryClassifier(Classifier):
                     else self.negative_decision)
 
     def ranking(self, table):
-        self.trigger_task_start(len(table), TASK_RANKING)
+        ranking_task_info = TaskInfo(TASK_RANKING, len(table))
+        self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=ranking_task_info)
+        ranking_task_info.signal_start()
         for i, record in enumerate(table):
             yield self.rank_record(record, table.header)
-            self.trigger_task_progress(i + 1, TASK_RANKING)
-        self.trigger_task_end(TASK_RANKING)
+            ranking_task_info.signal_progress(i + 1)
+        ranking_task_info.signal_end()
 
     def full_ranking(self, table):
         return sorted(zip(self.ranking(table),
