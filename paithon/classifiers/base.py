@@ -19,7 +19,7 @@ TASK_RANKING = 'classifier_ranking_calculation'
 
 class Classifier(EventDispatcherMixin):
     def __init__(self, table=None, **kwargs):
-        super(Classifier).__init__()
+        super(Classifier, self).__init__()
         self._params = ClassifierParams()
         self.init(**kwargs)
         if table is not None:
