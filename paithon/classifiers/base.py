@@ -86,13 +86,11 @@ class Classifier(EventDispatcherMixin):
 class BinaryClassifier(Classifier):
     def __init__(self, table=None, threshold=0.5,
                     positive_decision=1, negative_decision=0,
-                    decision_index=0, **kwargs):
+                    **kwargs):
         self.threshold = threshold
         self.positive_decision = 1
         self.negative_decision = 0
-        super(BinaryClassifier, self).__init__(table=table,
-                                                decision_index=decision_index,
-                                                **kwargs)
+        super(BinaryClassifier, self).__init__(table=table, **kwargs)
 
     def rank_record(self, record, header):
         raise AbstractMethodError()
