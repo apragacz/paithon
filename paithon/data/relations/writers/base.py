@@ -8,3 +8,6 @@ class RecordWriter(object):
 
     def write_record(self, record):
         raise AbstractMethodError()
+
+    def write_footer(self):
+        raise AbstractMethodError()

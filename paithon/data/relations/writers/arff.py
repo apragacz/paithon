@@ -1,6 +1,5 @@
-from paithon.data.tables.headers import (Header, COLUMN_TYPE_NOMINAL,
-    COLUMN_TYPE_NUMERIC, COLUMN_TYPE_STRING)
-from paithon.data.writers.core import RecordWriter
+from paithon.data.relations.headers import Header
+from paithon.data.relations.writers.core import RecordWriter
 
 
 class RecordARFFWriter(RecordWriter):
@@ -10,26 +9,31 @@ class RecordARFFWriter(RecordWriter):
         self._header = Header()
 
     def str_dump(self, value, index):
+        #use attribute info in the future
         return str(value)
 
     def write_header(self, header):
         self._header = header
         self._f.write('@relation unnamed\n')
-        for info in header.column_infos:
-            if info.column_type == COLUMN_TYPE_NUMERIC:
+        for attribute in header.attributes:
+            if attribute.numeric:
                 type_str = 'NUMERIC'
-            if info.column_type == COLUMN_TYPE_STRING:
-                type_str = 'STRING'
-            elif info.column_type == COLUMN_TYPE_NOMINAL:
+            elif attribute.discrete:
                 dump = lambda ((i, v)): self.str_dump(v, i)
                 type_str = '{%s}' % (','.join(map(dump,
-                                                    enumerate(info.values))))
-            self._f.write('@attribute %s %s\n' % (info.name, type_str))
+                                                enumerate(attribute.values))))
+            else:
+                type_str = 'STRING'
+            self._f.write('@attribute %s %s\n' % (attribute.name, type_str))
         self._f.write('@data\n')
 
     def write_record(self, record):
-        self._f.write(','.join(map(str, record)))
+        dump = lambda ((i, v)): self.str_dump(v, i)
+        self._f.write(','.join(map(dump, enumerate(record))))
         self._f.write('\n')
+
+    def write_footer(self):
+        self._f.flush()
 
     def close(self):
         self._f.close()

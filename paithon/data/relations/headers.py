@@ -1,5 +1,4 @@
 from paithon.core.exceptions import AbstractMethodError, ValidationError
-from paithon.core.stat import mean_and_variance
 
 
 class HeaderValidationError(ValidationError):
@@ -21,6 +20,10 @@ class AbstractAttribute(object):
         raise AbstractMethodError()
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def discrete(self):
         raise AbstractMethodError()
 
@@ -38,7 +41,8 @@ class NominalAttribute(AbstractAttribute):
         self._values = None
 
     def load_values(self, values):
-        self._values = set(values)
+        if not self._values:
+            self._values = set(values)
 
     def to_python(self, input_value):
         return str(input_value)
@@ -57,34 +61,20 @@ class NominalAttribute(AbstractAttribute):
         return False
 
     @property
-    def values(self):
-        return self._values
-
-    @property
     def initialized(self):
         return bool(self._values)
 
+    @property
+    def values(self):
+        return self._values if self._values else set()
 
-class StringColumnInfo(AbstractColumnInfo):
+
+class StringAttribute(AbstractAttribute):
     def initialize(self):
-        self._values_lengths = {}
-
-    def load_values(self, values):
-        for value in values:
-            k = len(value)
-            self._values_lengths[k] = self._values_lengths.setdefault(k, 0) + 1
+        pass
 
     def to_python(self, input_value):
         return str(input_value)
-
-    def __eq__(self, value):
-        if hasattr(value, '_values_lengths'):
-            return (self._values_lengths == value._values_lengths)
-        return False
-
-    @property
-    def column_type(self):
-        return COLUMN_TYPE_STRING
 
     @property
     def discrete(self):
@@ -94,27 +84,24 @@ class StringColumnInfo(AbstractColumnInfo):
     def numeric(self):
         return False
 
+    @property
+    def initialized(self):
+        return True
 
-class NumericColumnInfo(AbstractColumnInfo):
+    def __eq__(self, value):
+        if not isinstance(value, StringAttribute):
+            return False
+        if self._name != value.name:
+            return False
+        return True
+
+
+class NumericAttribute(AbstractAttribute):
     def initialize(self):
-        self._mean = None
-        self._variance = None
-
-    def load_values(self, values):
-        self._mean, self._variance = mean_and_variance(values)
+        pass
 
     def to_python(self, input_value):
         return float(input_value)
-
-    def __eq__(self, value):
-        if hasattr(value, '_mean') and hasattr(value, '_variance'):
-            return (self._mean == value._mean
-                        and self._variance == value._variance)
-        return False
-
-    @property
-    def column_type(self):
-        return COLUMN_TYPE_NUMERIC
 
     @property
     def discrete(self):
@@ -124,39 +111,67 @@ class NumericColumnInfo(AbstractColumnInfo):
     def numeric(self):
         return True
 
+    @property
+    def initialized(self):
+        return True
 
-class IntegerColumnInfo(NumericColumnInfo):
+    def __eq__(self, value):
+        if not isinstance(value, NumericAttribute):
+            return False
+        if self._name != value.name:
+            return False
+        return True
+
+
+class IntegerAttribute(NumericAttribute):
     def to_python(self, input_value):
         return int(input_value)
 
 
 class Header(object):
-    def __init__(self, column_infos=None, record_len=0,
-                    constructor=lambda name: StringColumnInfo(name)):
-        if column_infos:
-            self._column_infos = column_infos
+    def __init__(self, attributes=None, record_len=0,
+                    constructor=lambda name: StringAttribute(name)):
+        if attributes:
+            self._attributes = attributes
         else:
-            self._column_infos = [constructor('A%d' % (i + 1))
+            self._attributes = [constructor('A%d' % (i + 1))
                                 for i in range(record_len)]
+        self._decision_index = None
 
-    def __eq__(self, value):
-        if hasattr(value, '_column_infos'):
-            return (self._column_infos == value._column_infos)
-        return False
+    def set_decision_index(self, index):
+        self._decision_index = index
 
     @property
-    def column_infos(self):
-        return self._column_infos
-
-    def load_values_by_index(self, index, values):
-        self._column_infos[index].load_values(values)
+    def attributes(self):
+        return self._attributes
 
     def validate(self, record):
-        if len(record) != len(self._column_infos):
+        if len(record) != len(self._attributes):
             raise HeaderValidationError('invalid record length')
 
     def to_python_by_index(self, index, value):
-        return self._column_infos[index].to_python(value)
+        return self._attributes[index].to_python(value)
+
+    def __eq__(self, value):
+        if not isinstance(value, Header):
+            return False
+        if not hasattr(value, '_attributes'):
+            return False
+        if not hasattr(value, '_decision_index'):
+            return False
+        if self._attributes != value._attributes:
+            return False
+        if self._decision_index != value._decision_index:
+            return False
+        return True
 
     def __len__(self):
-        return len(self._column_infos)
+        return len(self._attributes)
+
+    def __iter__(self):
+        return iter(self._attributes)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return self.__class__(attributes=self._attributes[key])
+        return self._attributes[key]

@@ -1,6 +1,6 @@
 from unittest import TestCase
-from paithon.data.tables.tables import Table
-from paithon.data.tables.readers.csv import (RecordNumericCSVReader,
+from paithon.data.relations.relations import Relation
+from paithon.data.relations.readers.csv import (RecordNumericCSVReader,
     RecordNominalCSVReader)
 
 csv_file_data1 = """attr,attr2,attr3
@@ -31,12 +31,12 @@ class TablesTestCase(TestCase):
 
     def test_simple(self):
         csv_reader = RecordNominalCSVReader(self.f, header=True)
-        table = Table()
+        table = Relation()
         table.read(csv_reader)
         self.assertEqual(table[1], ('2', '4', 'Y'))
         self.assertEqual(len(table), 5)
         table2 = table[1:3]
-        self.assertIsInstance(table2, Table)
+        self.assertIsInstance(table2, Relation)
         self.assertEqual(table2[1], ('3', '4', 'N'))
         self.assertEqual(len(table.sample_without_replacement(2)), 2)
         self.assertEqual(len(table.sample_with_replacement(2)), 2)

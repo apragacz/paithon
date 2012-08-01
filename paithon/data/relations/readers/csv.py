@@ -1,7 +1,7 @@
 from paithon.core.exceptions import AbstractMethodError
-from paithon.data.tables.readers.base import RecordReader
-from paithon.data.tables.headers import (Header, NumericColumnInfo,
-    NominalColumnInfo)
+from paithon.data.relations.readers.base import RecordReader
+from paithon.data.relations.headers import (Header, NumericAttribute,
+    NominalAttribute)
 
 
 class AbstractRecordCSVReader(RecordReader):
@@ -13,7 +13,7 @@ class AbstractRecordCSVReader(RecordReader):
         self._f = in_file
         self._sep = separator
 
-    def column_info(self, index, name):
+    def attribute(self, index, name):
         raise AbstractMethodError()
 
     def read_header(self):
@@ -21,15 +21,15 @@ class AbstractRecordCSVReader(RecordReader):
             line = self._f.readline()
             assert(line)
             header_record = [item.strip() for item in line.split(self._sep)]
-            column_infos = [self.column_info(i, name)
+            attributes = [self.attribute(i, name)
                                 for i, name in enumerate(header_record)]
         else:
             assert(self._record_cache is None)
             self._record_cache = self.read_record_core()
             header_len = len(self._record_cache) if self._record_cache else 0
-            column_infos = [self.column_info(i, None)
+            attributes = [self.attribute(i, None)
                                 for i in range(header_len)]
-        self._header = Header(column_infos=column_infos)
+        self._header = Header(attributes=attributes)
         return self._header
 
     def read_record_core(self):
@@ -67,11 +67,11 @@ class AbstractRecordCSVReader(RecordReader):
 
 class RecordNumericCSVReader(AbstractRecordCSVReader):
 
-    def column_info(self, index, name):
-        return NumericColumnInfo(name)
+    def attribute(self, index, name):
+        return NumericAttribute(name)
 
 
 class RecordNominalCSVReader(AbstractRecordCSVReader):
 
-    def column_info(self, index, name):
-        return NominalColumnInfo(name)
+    def attribute(self, index, name):
+        return NominalAttribute(name)

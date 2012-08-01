@@ -1,8 +1,8 @@
 import random
-from paithon.data.tables.headers import Header
+from paithon.data.relations.headers import Header
 
 
-class Table(object):
+class Relation(object):
     def __init__(self, data=None, header=None):
         self._data = data if data else []
         self._header = header if header is not None else Header()
@@ -25,46 +25,37 @@ class Table(object):
     def add_record(self, record):
         self._data.append(record)
 
-    def reload_header(self):
-        self._header = Header()
-        self.reload_header_values()
-
-    def reload_header_values(self):
-        if self._data:
-            self._header._columns_values = [set() for _ in self._data[0]]
-
-            for record in self.data:
-                for i, item in enumerate(record):
-                    self._header._columns_values[i].add(item)
-
     def read(self, reader):
         self._data = []
-        self.set_header(reader.read_header())
+        self._header = reader.read_header()
         for record in reader:
             self.add_record(record)
 
-        for attribute in self._header:
-            if attribute.is_uninitialized():
-                attribute.load_values(self.column_values(index))
+        for index, attribute in enumerate(self._header):
+            if not attribute.initialized:
+                attribute.load_values(self.attribute_values(index))
 
     def write(self, writer):
         writer.write_header(self._header)
         for record in self._data:
             writer.write_record(record)
+        writer.write_footer()
 
-    def column_values(self, index):
+    def iter_attribute_values(self, attribute_index):
         for record in self._data:
-            yield record[index]
+            yield record[attribute_index]
 
-    def split_by_column_values(self, column_index, table_class=None):
-        if table_class is None:
-            table_class = self.__class__
+    def attribute_values(self, attribute_index):
+        return list(self.iter_attribute_values(attribute_index))
+
+    def split_by_column_values(self, column_index):
+        cls = self.__class__
         sp = {}
 
         for record in self._data:
             value = record[column_index]
             if value not in sp:
-                sp[value] = table_class(header=self._header)
+                sp[value] = cls(header=self._header)
             sp[value].add_record(record)
 
         return sp
@@ -79,14 +70,12 @@ class Table(object):
 
         return parts
 
-    def sample_with_replacement(self, sample_number, rnd=None,
-            table_class=None):
-        if table_class is None:
-            table_class = self.__class__
+    def sample_with_replacement(self, sample_number, rnd=None):
+        relation_cls = self.__class__
         if rnd is None:
             rnd = random.Random()
 
-        table = table_class(header=self._header)
+        table = relation_cls(header=self._header)
         data_len = len(self._data)
 
         for __ in xrange(sample_number):
@@ -94,14 +83,12 @@ class Table(object):
 
         return table
 
-    def sample_without_replacement(self, sample_number, rnd=None,
-            table_class=None):
-        if table_class is None:
-            table_class = self.__class__
+    def sample_without_replacement(self, sample_number, rnd=None):
+        relation_cls = self.__class__
         if rnd is None:
             rnd = random.Random()
 
-        table = table_class(header=self._header)
+        table = relation_cls(header=self._header)
         data = []
         data.extend(self._data)
         data_len = len(data)
@@ -119,16 +106,16 @@ class Table(object):
 
     @classmethod
     def join_tables(cls, *args):
-        table_class = cls
+        relation_cls = cls
         if args:
-            table = table_class(header=args[0].header)
+            relation = relation_cls(header=args[0].header)
             for arg in args:
                 assert(args[0].header == arg.header)
                 for record in arg:
-                    table.add_record(record)
-            return table
+                    relation.add_record(record)
+            return relation
         else:
-            return table_class()
+            return relation_cls()
 
     def __unicode__(self):
         return u'%s with %d elements' % (self.__class__.__name__, len(self.data))

@@ -2,7 +2,6 @@ import math
 
 from paithon.classifiers.base import BinaryClassifier, ClassifierParams
 from paithon.core import distances
-from paithon.data.tables.tables import Table
 
 DISTANCE_EUCLIDEAN_SQ = distances.euclidean_squared
 DISTANCE_EUCLIDEAN = distances.euclidean
@@ -41,19 +40,18 @@ class BinaryKNNClassifier(BinaryClassifier):
         table_iter = iter(self._knn_train_records)
         ranking = []
         for __, rec in zip(range(self._k), table_iter):
-            ranking.append((d(rec), rec))
+            ranking.append((dist(rec), rec))
 
         ranking.sort(key=lambda el: el[0])
 
         dist_threshold = ranking[-1][0]
         for rec in table_iter:
-            rec_dist = d(rec)
+            rec_dist = dist(rec)
             if rec_dist < dist_threshold:
                 ranking.append((rec_dist, rec))
                 ranking.sort(key=lambda el: el[0])
                 ranking.pop()
                 dist_threshold = ranking[-1][0]
-
 
         return ranking
 
