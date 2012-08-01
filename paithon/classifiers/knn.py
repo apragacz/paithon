@@ -1,12 +1,13 @@
 import math
 
 from paithon.classifiers.base import BinaryClassifier, ClassifierParams
+from paithon.core import distances
 from paithon.data.tables.tables import Table
 
-DISTANCE_EUCLIDEAN_SQ = lambda x1, x2: sum([(e1 - e2) ** 2 for e1, e2 in zip(x1, x2)])
-DISTANCE_EUCLIDEAN = lambda x1, x2: math.sqrt(sum([(e1 - e2) ** 2 for e1, e2 in zip(x1, x2)]))
-DISTANCE_CHEBYSHEV = lambda x1, x2: max([abs(e1 - e2) for e1, e2 in zip(x1, x2)])
-DISTANCE_MANHATTAN = lambda x1, x2: sum([abs(e1 - e2) for e1, e2 in zip(x1, x2)])
+DISTANCE_EUCLIDEAN_SQ = distances.euclidean_squared
+DISTANCE_EUCLIDEAN = distances.euclidean
+DISTANCE_CHEBYSHEV = distances.chebyshev
+DISTANCE_MANHATTAN = distances.manhattan
 
 
 WEIGHT_UNIFORM = lambda dist: 1.0
@@ -18,14 +19,8 @@ WEIGHT_ONE_MINUS = lambda dist: 1.0 - dist  # only for distances in range [0,1]
 
 
 class BinaryKNNClassifier(BinaryClassifier):
-    def init(self, k=1, distance=DISTANCE_EUCLIDEAN_SQ, weight=WEIGHT_UNIFORM):
-        self._table = Table()
-        self._distance = distance
-        self._weight = weight
-        self._k = k
-        self._cache_enabled = False
-        self._record_dist_ranking_cache = {}
-        self._distance_fun_cache = {}
+    def initialize(self):
+        pass
 
     def get_params(self):
         return ClassifierParams(k=self.k,
@@ -33,30 +28,19 @@ class BinaryKNNClassifier(BinaryClassifier):
                                 weight=self.weight)
 
     def set_params(self, params):
-        self._distance = params.get('distance', self.distance)
-        self._weight = params.get('weight', self.weight)
-        self._k = params.get('k', self.k)
+        self._distance = params.get('distance', DISTANCE_EUCLIDEAN_SQ)
+        self._weight = params.get('weight', WEIGHT_UNIFORM)
+        self._k = params.get('k', 1)
 
-    def set_cache(self, cache_enabled):
-        self._cache_enabled = cache_enabled
-
-    def train(self, table):
-        self._table = table
-        self._record_dist_ranking_cache = {}
+    def train(self, train_table):
+        self._knn_train_records = train_table
 
     def record_distance_ranking(self, record, header):
-        if self.cache_enabled:
-            if record in self.record_dist_ranking_cache:
-                ranking = self.record_dist_ranking_cache[record]
-                if (len(ranking) >= self.k
-                        and self.distance_fun_cache[record] == self.distance):
-                    return ranking[0:self.k]
-
         x1, y1 = record
-        d = lambda rec: self.distance(x1, rec[0])
-        table_iter = iter(self.table)
+        dist = lambda rec: self._distance(x1, rec[0])
+        table_iter = iter(self._knn_train_records)
         ranking = []
-        for __, rec in zip(range(self.k), table_iter):
+        for __, rec in zip(range(self._k), table_iter):
             ranking.append((d(rec), rec))
 
         ranking.sort(key=lambda el: el[0])
@@ -70,9 +54,6 @@ class BinaryKNNClassifier(BinaryClassifier):
                 ranking.pop()
                 dist_threshold = ranking[-1][0]
 
-        if self.cache_enabled:
-            self.record_dist_ranking_cache[record] = ranking
-            self.distance_fun_cache[record] = self.distance
 
         return ranking
 
@@ -87,12 +68,3 @@ class BinaryKNNClassifier(BinaryClassifier):
 
         #return ranking[0][1]
         return sum([weight * rank for weight, rank in ranking]) / weight_sum
-
-    def full_rankings(self, table, params_list):
-        start_params = self.get_params()
-        for params in params_list:
-            #NO DISTANCE FUNCITION CHANGE!!!
-            assert ('distance' not in params)
-            self.set_params(params)
-            yield self.full_ranking(table)
-        self.set_params(start_params)

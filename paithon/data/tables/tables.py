@@ -6,7 +6,6 @@ class Table(object):
     def __init__(self, data=None, header=None):
         self._data = data if data else []
         self._header = header if header is not None else Header()
-        self._decision_index = None
 
     def __iter__(self):
         return iter(self._data)
@@ -21,10 +20,7 @@ class Table(object):
             return self._data[key]
 
     def set_decision_index(self, index):
-        self._decision_index = index
-
-    def set_header(self, header):
-        self._header = header
+        self._header.set_decision_index(index)
 
     def add_record(self, record):
         self._data.append(record)
@@ -47,8 +43,9 @@ class Table(object):
         for record in reader:
             self.add_record(record)
 
-        for index in range(len(self._header)):
-            self._header.load_values_by_index(index, self.column_values(index))
+        for attribute in self._header:
+            if attribute.is_uninitialized():
+                attribute.load_values(self.column_values(index))
 
     def write(self, writer):
         writer.write_header(self._header)

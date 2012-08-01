@@ -18,36 +18,39 @@ TASK_RANKING = 'classifier_ranking_calculation'
 
 
 class Classifier(EventDispatcherMixin):
-    def __init__(self, table=None, **kwargs):
+    def __init__(self, train_table=None, **kwargs):
         super(Classifier, self).__init__()
-        self._params = ClassifierParams()
-        self.init(**kwargs)
-        if table is not None:
-            self.train(table)
+        self.initialize()
+        self.set_params(kwargs)
+        if train_table is not None:
+            self.train(train_table)
 
-    def init(self, **kwargs):
-        pass
+    def initialize(self):
+        raise AbstractMethodError()
 
     def get_params(self):
-        return self._params
+        raise AbstractMethodError()
 
     def set_params(self, params):
-        self._params = params
+        raise AbstractMethodError()
 
-    def train(self, table):
+    def train(self, train_table):
         raise AbstractMethodError()
 
     def classify_record(self, record, header):
         raise AbstractMethodError()
 
-    def classify(self, table):
-        task_info = TaskInfo(TASK_CLASSIFY, len(table))
+    def iterclassify(self, test_table):
+        task_info = TaskInfo(TASK_CLASSIFY, len(test_table))
         self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=task_info)
         task_info.signal_start()
-        for i, record in enumerate(table):
-            yield self.classify_record(record, table.header)
+        for i, record in enumerate(test_table):
+            yield self.classify_record(record, test_table.header)
             task_info.signal_progress(i + 1)
         task_info.signal_end()
+
+    def classify(self, test_table):
+        return list(self.iterclassify(test_table))
 
     def crossvalidate(self, table, fold_number=10):
         cv_task_info = TaskInfo(TASK_CV, fold_number)
@@ -84,39 +87,40 @@ class Classifier(EventDispatcherMixin):
 
 
 class BinaryClassifier(Classifier):
-    def __init__(self, table=None, threshold=0.5,
+    def __init__(self, train_table=None, threshold=0.5,
                     positive_decision=1, negative_decision=0,
                     **kwargs):
-        self.threshold = threshold
-        self.positive_decision = 1
-        self.negative_decision = 0
-        super(BinaryClassifier, self).__init__(table=table, **kwargs)
+        self._threshold = threshold
+        self._positive_decision = 1
+        self._negative_decision = 0
+        super(BinaryClassifier, self).__init__(train_table=train_table,
+                                                **kwargs)
 
     def rank_record(self, record, header):
         raise AbstractMethodError()
 
     def classify_record(self, record, header):
-        return (self.positive_decision
-                    if self.rank_record(record, header) >= self.threshold
-                    else self.negative_decision)
+        return (self._positive_decision
+                    if self.rank_record(record, header) >= self._threshold
+                    else self._negative_decision)
 
-    def ranking(self, table):
-        ranking_task_info = TaskInfo(TASK_RANKING, len(table))
+    def iterrank(self, test_table):
+        ranking_task_info = TaskInfo(TASK_RANKING, len(test_table))
         self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=ranking_task_info)
         ranking_task_info.signal_start()
-        for i, record in enumerate(table):
-            yield self.rank_record(record, table.header)
+        for i, record in enumerate(test_table):
+            yield self.rank_record(record, test_table.header)
             ranking_task_info.signal_progress(i + 1)
         ranking_task_info.signal_end()
 
-    def full_ranking(self, table):
-        return sorted(zip(self.ranking(table),
-                            enumerate(table)),
-                        key=lambda el: el[0])
+    def rank(self, test_table):
+        return list(self.iterrank())
 
-    def full_rankings(self, table, params_list):
-        start_params = self.get_params()
-        for params in params_list:
-            self.set_params(params)
-            yield self.full_ranking(table)
-        self.set_params(start_params)
+    def ranking(self, test_table, sort=True):
+        result = [(i, rank)
+                    for rank, i in zip(self.iterrank(test_table),
+                                                    xrange(len(test_table)))]
+        if sort:
+            return sorted(result, key=lambda el: el[1])
+        else:
+            return result

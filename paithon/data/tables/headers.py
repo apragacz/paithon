@@ -6,12 +6,7 @@ class HeaderValidationError(ValidationError):
     pass
 
 
-COLUMN_TYPE_NOMINAL = 1
-COLUMN_TYPE_NUMERIC = 2
-COLUMN_TYPE_STRING = 3
-
-
-class AbstractColumnInfo(object):
+class AbstractAttribute(object):
     def __init__(self, name):
         self._name = name
         self.initialize()
@@ -26,10 +21,6 @@ class AbstractColumnInfo(object):
         raise AbstractMethodError()
 
     @property
-    def column_type(self):
-        raise AbstractMethodError()
-
-    @property
     def discrete(self):
         raise AbstractMethodError()
 
@@ -37,10 +28,14 @@ class AbstractColumnInfo(object):
     def numeric(self):
         raise AbstractMethodError()
 
+    @property
+    def initialized(self):
+        raise AbstractMethodError()
 
-class NominalColumnInfo(AbstractColumnInfo):
+
+class NominalAttribute(AbstractAttribute):
     def initialize(self):
-        self._values = set()
+        self._values = None
 
     def load_values(self, values):
         self._values = set(values)
@@ -54,10 +49,6 @@ class NominalColumnInfo(AbstractColumnInfo):
         return False
 
     @property
-    def column_type(self):
-        return COLUMN_TYPE_NOMINAL
-
-    @property
     def discrete(self):
         return True
 
@@ -68,6 +59,10 @@ class NominalColumnInfo(AbstractColumnInfo):
     @property
     def values(self):
         return self._values
+
+    @property
+    def initialized(self):
+        return bool(self._values)
 
 
 class StringColumnInfo(AbstractColumnInfo):
