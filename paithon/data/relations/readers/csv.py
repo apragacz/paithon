@@ -6,15 +6,18 @@ from paithon.data.relations.headers import (Header, NumericAttribute,
 
 class AbstractRecordCSVReader(RecordReader):
 
-    def __init__(self, in_file, header=False, separator=','):
+    def __init__(self, in_file, attributes=None, header=False, separator=',',
+                quote='"'):
         self._header = None
         self._header_present = header
         self._record_cache = None
         self._f = in_file
         self._sep = separator
+        self._attributes = attributes
+        self._quote = quote
 
     def attribute(self, index, name):
-        raise AbstractMethodError()
+        return self._attributes[index]
 
     def read_header(self):
         if self._header_present:
