@@ -48,12 +48,12 @@ class Relation(object):
     def attribute_values(self, attribute_index):
         return list(self.iter_attribute_values(attribute_index))
 
-    def split_by_column_values(self, column_index):
+    def split_by_column_values(self, attribute_index):
         cls = self.__class__
         sp = {}
 
         for record in self._data:
-            value = record[column_index]
+            value = record[attribute_index]
             if value not in sp:
                 sp[value] = cls(header=self._header)
             sp[value].add_record(record)
