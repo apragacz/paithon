@@ -7,18 +7,6 @@ class Relation(object):
         self._data = data if data else []
         self._header = header if header is not None else Header()
 
-    def __iter__(self):
-        return iter(self._data)
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            return self.__class__(data=self._data[key], header=self._header)
-        else:
-            return self._data[key]
-
     def set_decision_index(self, index):
         self._header.set_decision_index(index)
 
@@ -103,6 +91,22 @@ class Relation(object):
         return table
 
     bootstrap = sample_with_replacement
+
+    @property
+    def attributes(self):
+        return self._header.attributes
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return self.__class__(data=self._data[key], header=self._header)
+        else:
+            return self._data[key]
 
     @classmethod
     def join_tables(cls, *args):

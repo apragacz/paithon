@@ -34,6 +34,8 @@ class RelationsTestCase(TestCase):
         csv_reader = RecordNominalCSVReader(f, header=True)
         relation = Relation()
         relation.read(csv_reader)
+        self.assertSetEqual(relation.attributes[2].values,
+            set(['Y','N']))
         self.assertEqual(relation[1], ('2', '4', 'Y'))
         self.assertEqual(len(relation), 5)
         relation2 = relation[1:3]
@@ -54,6 +56,11 @@ class RelationsTestCase(TestCase):
         self.assertEqual(len(split3), 2)
         self.assertEqual(len(split3['Y']), 2)
         self.assertEqual(len(split3['N']), 3)
+
+        self.assertListEqual(relation.attribute_values(0),
+                                ['1', '2', '3', '5', '6'])
+        self.assertListEqual(relation.attribute_values(2),
+                                ['Y', 'Y', 'N', 'N', 'N'])
 
     def test_iris(self):
         f = open('tests/iris.txt')

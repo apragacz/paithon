@@ -6,32 +6,36 @@ from paithon.data.relations.headers import (Header, NumericAttribute,
 
 class AbstractRecordCSVReader(RecordReader):
 
-    def __init__(self, in_file, attributes=None, header=False, separator=',',
-                quote='"'):
+    def __init__(self, in_file, header=False, separator=',', quote='"'):
         self._header = None
         self._header_present = header
         self._record_cache = None
         self._f = in_file
         self._sep = separator
-        self._attributes = attributes
         self._quote = quote
 
-    def attribute(self, index, name):
-        return self._attributes[index]
+    def attribute(self, index, name, value):
+        return AbstractMethodError()
 
     def read_header(self):
+        assert(self._record_cache is None)
         if self._header_present:
             line = self._f.readline()
             assert(line)
-            header_record = [item.strip() for item in line.split(self._sep)]
-            attributes = [self.attribute(i, name)
-                                for i, name in enumerate(header_record)]
+            header_names = [item.strip() for item in line.split(self._sep)]
+            first_record = self.read_record_core()
+            assert(first_record)
+            assert(len(first_record) == len(header_names))
+            self._record_cache = first_record
+            attributes = [self.attribute(i, name, value)
+                            for i, (name, value) in enumerate(zip(header_names,
+                                                                first_record))]
         else:
-            assert(self._record_cache is None)
-            self._record_cache = self.read_record_core()
-            header_len = len(self._record_cache) if self._record_cache else 0
-            attributes = [self.attribute(i, None)
-                                for i in range(header_len)]
+            first_record = self.read_record_core()
+            self._record_cache = first_record
+            first_record = first_record or []
+            attributes = [self.attribute(i, None, value)
+                                for i, value in  enumerate(first_record)]
         self._header = Header(attributes=attributes)
         return self._header
 
@@ -70,11 +74,17 @@ class AbstractRecordCSVReader(RecordReader):
 
 class RecordNumericCSVReader(AbstractRecordCSVReader):
 
-    def attribute(self, index, name):
+    def attribute(self, index, name, value):
         return NumericAttribute(name)
 
 
 class RecordNominalCSVReader(AbstractRecordCSVReader):
 
-    def attribute(self, index, name):
+    def attribute(self, index, name, value):
         return NominalAttribute(name)
+
+
+class SmartCSVReader(AbstractRecordCSVReader):
+
+    def attribute(self, index, name, value):
+        return NumericAttribute(name)
