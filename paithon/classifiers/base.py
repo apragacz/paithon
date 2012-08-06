@@ -40,7 +40,7 @@ class Classifier(EventDispatcherMixin):
     def classify_record(self, record, header):
         raise AbstractMethodError()
 
-    def iterclassify(self, test_table):
+    def iter_classify(self, test_table):
         task_info = TaskInfo(TASK_CLASSIFY, len(test_table))
         self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=task_info)
         task_info.signal_start()
@@ -50,7 +50,7 @@ class Classifier(EventDispatcherMixin):
         task_info.signal_end()
 
     def classify(self, test_table):
-        return list(self.iterclassify(test_table))
+        return list(self.iter_classify(test_table))
 
     def crossvalidate(self, table, fold_number=10):
         cv_task_info = TaskInfo(TASK_CV, fold_number)
@@ -86,39 +86,32 @@ class Classifier(EventDispatcherMixin):
         return evaluation
 
 
-class BinaryClassifier(Classifier):
-    def __init__(self, train_table=None, threshold=0.5,
-                    positive_decision=1, negative_decision=0,
-                    **kwargs):
-        self._threshold = threshold
-        self._positive_decision = 1
-        self._negative_decision = 0
-        super(BinaryClassifier, self).__init__(train_table=train_table,
-                                                **kwargs)
+class RankingClassifier(Classifier):
 
-    def rank_record(self, record, header):
+    def rank_record(self, record, header, decision):
         raise AbstractMethodError()
 
     def classify_record(self, record, header):
-        return (self._positive_decision
-                    if self.rank_record(record, header) >= self._threshold
-                    else self._negative_decision)
+        assert(header.values)
+        ranking = [(self.rank_record(record, header, decision), decision)
+                    for decision in header.values]
+        return max(ranking, key=lambda x: x[0])[1]
 
-    def iterrank(self, test_table):
+    def iter_rank(self, test_table, decision):
         ranking_task_info = TaskInfo(TASK_RANKING, len(test_table))
         self.trigger_ev(EVENT_TASK_INFO_CREATED, task_info=ranking_task_info)
         ranking_task_info.signal_start()
         for i, record in enumerate(test_table):
-            yield self.rank_record(record, test_table.header)
+            yield self.rank_record(record, test_table.header, decision)
             ranking_task_info.signal_progress(i + 1)
         ranking_task_info.signal_end()
 
     def rank(self, test_table):
-        return list(self.iterrank())
+        return list(self.iter_rank())
 
-    def ranking(self, test_table, sort=True):
+    def ranking(self, test_table, decision, sort=True):
         result = [(i, rank)
-                    for rank, i in zip(self.iterrank(test_table),
+                    for rank, i in zip(self.iterrank(test_table, decision),
                                                     xrange(len(test_table)))]
         if sort:
             return sorted(result, key=lambda el: el[1])

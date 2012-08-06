@@ -1,6 +1,6 @@
 import math
 
-from paithon.classifiers.base import BinaryClassifier, ClassifierParams
+from paithon.classifiers.base import RankingClassifier, ClassifierParams
 from paithon.core import distances
 
 DISTANCE_EUCLIDEAN_SQ = distances.euclidean_squared
@@ -17,7 +17,7 @@ WEIGHT_INVERTED_SQRT = lambda dist: 1.0 / (1.0 + math.sqrt(dist))
 WEIGHT_ONE_MINUS = lambda dist: 1.0 - dist  # only for distances in range [0,1]
 
 
-class BinaryKNNClassifier(BinaryClassifier):
+class KNNClassifier(RankingClassifier):
     def initialize(self):
         pass
 

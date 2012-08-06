@@ -129,28 +129,40 @@ class IntegerAttribute(NumericAttribute):
 
 
 class Header(object):
-    def __init__(self, attributes=None, record_len=0,
+    def __init__(self, attributes=None, decision_index=None, record_len=0,
                     constructor=lambda name: StringAttribute(name)):
         if attributes:
             self._attributes = attributes
         else:
             self._attributes = [constructor('A%d' % (i + 1))
                                 for i in range(record_len)]
-        self._decision_index = None
+        self._decision_index = decision_index
 
     def set_decision_index(self, index):
         self._decision_index = index
 
-    @property
-    def attributes(self):
-        return self._attributes
+    def get_decision_index(self):
+        return self._decision_index
 
     def validate(self, record):
         if len(record) != len(self._attributes):
             raise HeaderValidationError('invalid record length')
 
-    def to_python_by_index(self, index, value):
-        return self._attributes[index].to_python(value)
+    def split_record_by_decision(self, record):
+        x = []
+        y = None
+        for i, value in enumerate(record):
+            if i == self._decision_index:
+                y = value
+            else:
+                x.append(value)
+        return (tuple(x), y)
+
+    @property
+    def attributes(self):
+        return self._attributes
+
+    decision_index = property(set_decision_index, get_decision_index)
 
     def __eq__(self, value):
         if not isinstance(value, Header):

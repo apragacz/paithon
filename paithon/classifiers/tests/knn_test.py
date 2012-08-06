@@ -1,8 +1,8 @@
 from unittest import TestCase
-from paithon.classifiers.knn import BinaryKNNClassifier
+from paithon.classifiers.knn import KNNClassifier
 
 
 class KNNTestCase(TestCase):
     def test_simple(self):
-        classifier = BinaryKNNClassifier()
+        classifier = KNNClassifier()
         pass

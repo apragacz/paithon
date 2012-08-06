@@ -52,7 +52,7 @@ class AbstractRecordCSVReader(RecordReader):
             return self.read_record_core()
 
     def to_python(self, value, index):
-        return self._header.to_python_by_index(index, value)
+        return self._header.attributes[index].to_python(value)
 
     def __iter__(self):
         return self
