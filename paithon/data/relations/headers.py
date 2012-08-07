@@ -131,7 +131,7 @@ class IntegerAttribute(NumericAttribute):
 class Header(object):
     def __init__(self, attributes=None, decision_index=None, record_len=0,
                     constructor=lambda name: StringAttribute(name)):
-        if attributes:
+        if attributes is not None:
             self._attributes = attributes
         else:
             self._attributes = [constructor('A%d' % (i + 1))
@@ -139,7 +139,7 @@ class Header(object):
         self._decision_index = decision_index
 
     def set_decision_index(self, index):
-        self._decision_index = index
+        self._decision_index = index % len(self._attributes)
 
     def get_decision_index(self):
         return self._decision_index

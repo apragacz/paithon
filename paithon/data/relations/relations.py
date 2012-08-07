@@ -96,6 +96,32 @@ class Relation(object):
     def attributes(self):
         return self._header.attributes
 
+    @property
+    def conditional_part(self):
+        i = self._header.get_decision_index()
+        if i is None:
+            conditional_data = self._data
+            header = self._header
+        else:
+            attributes = self._header.attributes
+            conditional_atributes = attributes[:i] + attributes[(i + 1):]
+            conditional_data = [record[:i] + record[(i + 1):]
+                                for record in self._data]
+            header = Header(attributes=conditional_atributes)
+        return self.__class__(data=conditional_data, header=header)
+
+    @property
+    def decisional_part(self):
+        i = self._header.get_decision_index()
+        if i is None:
+            decisional_data = [() for _ in xrange(len())]
+            header = Header(attributes=[])
+        else:
+            decisional_attributes = [self._header.attributes[i]]
+            decisional_data = [(record[i],) for record in self._data]
+            header = Header(attributes=decisional_attributes, decision_index=0)
+        return self.__class__(data=decisional_data, header=header)
+
     def __iter__(self):
         return iter(self._data)
 
