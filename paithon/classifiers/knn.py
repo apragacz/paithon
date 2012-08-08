@@ -19,7 +19,8 @@ WEIGHT_ONE_MINUS = lambda dist: 1.0 - dist  # only for distances in range [0,1]
 
 class KNNClassifier(RankingClassifier):
     def initialize(self):
-        pass
+        self._train_conditional_relation = []
+        self._train_decisional_relation = []
 
     def get_params(self):
         return ClassifierParams(k=self.k,
@@ -31,8 +32,9 @@ class KNNClassifier(RankingClassifier):
         self._weight = params.get('weight', WEIGHT_UNIFORM)
         self._k = params.get('k', 1)
 
-    def train(self, train_table):
-        self._knn_train_records = train_table
+    def train(self, train_relation):
+        self._train_conditional_relation = train_relation.conditional_part
+        self._train_decisional_relation = train_relation.decisonal_part
 
     def record_distance_ranking(self, record, header):
         x1, y1 = record
