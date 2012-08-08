@@ -19,8 +19,8 @@ WEIGHT_ONE_MINUS = lambda dist: 1.0 - dist  # only for distances in range [0,1]
 
 class KNNClassifier(RankingClassifier):
     def initialize(self):
-        self._train_conditional_relation = []
-        self._train_decisional_relation = []
+        self._train_cond_relation = []
+        self._train_dec_relation = []
 
     def get_params(self):
         return ClassifierParams(k=self.k,
@@ -33,37 +33,35 @@ class KNNClassifier(RankingClassifier):
         self._k = params.get('k', 1)
 
     def train(self, train_relation):
-        self._train_conditional_relation = train_relation.conditional_part
-        self._train_decisional_relation = train_relation.decisonal_part
+        self._train_cond_relation = train_relation.conditional_part
+        self._train_dec_relation = train_relation.decisional_part
 
-    def record_distance_ranking(self, record, header):
-        x1, y1 = record
-        dist = lambda rec: self._distance(x1, rec[0])
-        table_iter = iter(self._knn_train_records)
+    def record_distance_ranking(self, cond_record):
+        dist = lambda cond_rec: self._distance(cond_record, cond_rec)
+        it = iter(zip(self._train_cond_relation, self._train_dec_relation))
         ranking = []
-        for __, rec in zip(range(self._k), table_iter):
-            ranking.append((dist(rec), rec))
+        for _, (cond_rec, dec_rec) in zip(range(self._k), it):
+            ranking.append((dist(cond_rec), cond_rec, dec_rec[0]))
 
         ranking.sort(key=lambda el: el[0])
 
         dist_threshold = ranking[-1][0]
-        for rec in table_iter:
-            rec_dist = dist(rec)
+        for (cond_rec, dec_rec) in it:
+            rec_dist = dist(cond_rec)
             if rec_dist < dist_threshold:
-                ranking.append((rec_dist, rec))
+                ranking.append((rec_dist, cond_rec, dec_rec[0]))
                 ranking.sort(key=lambda el: el[0])
                 ranking.pop()
                 dist_threshold = ranking[-1][0]
 
         return ranking
 
-    def rank_record(self, record, header):
-        x1, y1 = record
-        w = self.weight
-        r = lambda rec: 1.0 if rec[1][self.decision_index] == self.positive_decision else 0.0
-        record_distance_ranking = self.record_distance_ranking(record, header)
-        ranking = [(w(dist), r(rec))
-                    for dist, rec in record_distance_ranking]
+    def rank_record(self, cond_record, cond_header, decision):
+        w = self._weight
+        r = lambda dec: 1.0 if dec == decision else 0.0
+        record_distance_ranking = self.record_distance_ranking(cond_record)
+        ranking = [(w(dist), r(dec))
+                    for dist, _, dec in record_distance_ranking]
         weight_sum = sum([weight for weight, __ in ranking])
 
         #return ranking[0][1]

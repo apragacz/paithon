@@ -10,6 +10,9 @@ class Relation(object):
     def set_decision_index(self, index):
         self._header.set_decision_index(index)
 
+    def get_decision_index(self):
+        return self._header.get_decision_index()
+
     def add_record(self, record):
         self._data.append(record)
 
@@ -92,9 +95,15 @@ class Relation(object):
 
     bootstrap = sample_with_replacement
 
+    decision_index = property(get_decision_index, set_decision_index)
+
     @property
     def attributes(self):
         return self._header.attributes
+
+    @property
+    def header(self):
+        return self._header
 
     @property
     def conditional_part(self):
@@ -114,7 +123,7 @@ class Relation(object):
     def decisional_part(self):
         i = self._header.get_decision_index()
         if i is None:
-            decisional_data = [() for _ in xrange(len())]
+            decisional_data = [() for _ in xrange(len(self._data))]
             header = Header(attributes=[])
         else:
             decisional_attributes = [self._header.attributes[i]]

@@ -11,9 +11,13 @@ class EventDispatcherMixin(object):
         self._event_listeners = {}
 
     def add_event_listener(self, event, listener):
+        if not hasattr(self, '_event_listeners'):
+            self._event_listeners = {}
         self._event_listeners.setdefault(event, []).append(listener)
 
     def remove_event_listener(self, event, listener):
+        if not hasattr(self, '_event_listeners'):
+            self._event_listeners = {}
         listeners = self._event_listeners.get(event, [])
         try:
             listeners.remove(listener)
@@ -21,6 +25,8 @@ class EventDispatcherMixin(object):
             raise ValueError('EventDispatcher.remove_listener: listener not on list')
 
     def trigger_event(self, event, params):
+        if not hasattr(self, '_event_listeners'):
+            self._event_listeners = {}
         for listener in self._event_listeners.get(event, []):
             listener.on_event(event, self, params)
 
