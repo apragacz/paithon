@@ -17,14 +17,42 @@ class AbstractRecordCSVReader(RecordReader):
     def attribute(self, index, name, info):
         return AbstractMethodError()
 
+    def raw_row_elements(self, line):
+        #TODO: more complicated cases
+        raw_row_elems = [elem for elem in line.rstrip().split(self._sep)]
+        return raw_row_elems
+
     def row_elements(self, line):
         #TODO: more complicated cases
-        row_elems = [elem.strip('\r\n\t ' + self._quote)
-                            for elem in line.split(self._sep)]
+        row_elems = [elem.strip(self._quote)
+                            for elem in self.raw_row_elements(line)]
         return row_elems
 
     def row_element_infos(self, line):
-        return [{} for _ in line.split(self._sep)]
+        def get_info(raw_elem):
+            info = {}
+            info['type'] = 'string'
+            info['quoted'] = False
+            if (raw_elem.startswith(self._quote)
+                    and raw_elem.endswith(self._quote)):
+                info['type'] = 'string'
+                info['quoted'] = True
+                return info
+            try:
+                int(raw_elem)
+                info['type'] = 'integer'
+                return info
+            except ValueError:
+                pass
+            try:
+                float(raw_elem)
+                info['type'] = 'numeric'
+                return info
+            except ValueError:
+                pass
+            return info
+        raw_row_elems = self.raw_row_elements(line)
+        return [get_info(raw_elem) for raw_elem in raw_row_elems]
 
     def read_header(self):
         assert(not self._record_buffer)
@@ -107,4 +135,11 @@ class RecordNominalCSVReader(AbstractRecordCSVReader):
 class SmartCSVReader(AbstractRecordCSVReader):
 
     def attribute(self, index, name, info):
-        return NumericAttribute(name)
+        info_type = info.get('type', 'undefined')
+        type_cls_map = {
+            'integer': NumericAttribute,
+            'string': NominalAttribute,
+            'numeric': NumericAttribute,
+        }
+        cls = type_cls_map.get(info_type, NominalAttribute)
+        return cls(name)

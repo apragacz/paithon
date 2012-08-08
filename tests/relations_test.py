@@ -1,7 +1,7 @@
 from unittest import TestCase
 from paithon.data.relations.relations import Relation
-from paithon.data.relations.readers.csv import (RecordNumericCSVReader,
-    RecordNominalCSVReader)
+from paithon.data.relations.readers.csv import (RecordNominalCSVReader,
+    SmartCSVReader)
 
 csv_file_data1 = """attr,attr2,attr3
 1,2,Y
@@ -35,7 +35,7 @@ class RelationsTestCase(TestCase):
         relation = Relation()
         relation.read(csv_reader)
         self.assertSetEqual(relation.attributes[2].values,
-            set(['Y','N']))
+            set(['Y', 'N']))
         self.assertEqual(relation[1], ('2', '4', 'Y'))
         self.assertEqual(len(relation), 5)
         relation2 = relation[1:3]
@@ -64,7 +64,42 @@ class RelationsTestCase(TestCase):
 
     def test_iris(self):
         f = open('tests/iris.txt')
-        csv_reader = RecordNominalCSVReader(f, header=True)
+        csv_reader = SmartCSVReader(f, header=True, separator='\t')
         relation = Relation()
         relation.read(csv_reader)
         f.close()
+        self.assertEqual(len(relation), 150)
+        self.assertEqual(len(relation.attributes), 9)
+
+        self.assertTrue(relation.attributes[0].numeric)
+        self.assertEqual(relation.attributes[4].name, 'Species')
+        for attribute in relation.attributes:
+            if attribute.name == 'Species':
+                self.assertFalse(attribute.numeric)
+                self.assertTrue(attribute.discrete)
+                self.assertSetEqual(attribute.values,
+                                    set(["setosa", "versicolor", "virginica"]))
+            else:
+                self.assertTrue(attribute.numeric)
+                self.assertFalse(attribute.discrete)
+        self.assertTrue(relation.attributes[8].numeric)
+
+        relation.set_decision_index(4)
+
+        cond_relation = relation.conditional_part
+        dec_relation = relation.decisional_part
+
+        self.assertEqual(len(cond_relation), 150)
+        self.assertEqual(len(cond_relation.attributes), 8)
+        self.assertEqual(len(dec_relation), 150)
+        self.assertEqual(len(dec_relation.attributes), 1)
+
+        for attribute in cond_relation.attributes:
+            self.assertTrue(attribute.numeric)
+            self.assertFalse(attribute.discrete)
+
+        for attribute in dec_relation.attributes:
+            self.assertFalse(attribute.numeric)
+            self.assertTrue(attribute.discrete)
+            self.assertSetEqual(attribute.values,
+                                set(["setosa", "versicolor", "virginica"]))
