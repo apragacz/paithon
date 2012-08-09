@@ -1,7 +1,10 @@
 from unittest import TestCase
-from paithon.data.relations.relations import Relation
+
+from paithon.core.exceptions import ValidationError
+from paithon.data.relations.headers import Header
 from paithon.data.relations.readers.csv import (RecordNominalCSVReader,
     SmartCSVReader)
+from paithon.data.relations.relations import Relation
 
 csv_file_data1 = """attr,attr2,attr3
 1,2,Y
@@ -70,6 +73,8 @@ class RelationsTestCase(TestCase):
         f.close()
         self.assertEqual(len(relation), 150)
         self.assertEqual(len(relation.attributes), 9)
+        self.assertEqual(len(relation.header), 9)
+        self.assertEqual(len(relation.header.attributes), 9)
 
         self.assertTrue(relation.attributes[0].numeric)
         self.assertEqual(relation.attributes[4].name, 'Species')
@@ -82,8 +87,27 @@ class RelationsTestCase(TestCase):
             else:
                 self.assertTrue(attribute.numeric)
                 self.assertFalse(attribute.discrete)
+
         self.assertTrue(relation.attributes[8].numeric)
 
+        self.assertEqual(relation.header, Header(relation.attributes))
+        self.assertEqual(relation.header[:], relation.header)
+
+        self.assertEqual(relation.header[4], relation.attributes[4])
+        self.assertEqual(relation.header.attributes[4], relation.attributes[4])
+
+        self.assertRaises(ValidationError, lambda: relation.header.validate(()))
+
+        try:
+            relation.header.validate(relation[0])
+            relation.header.validate(relation[1])
+            relation.header.validate(relation[2])
+        except ValidationError:
+            self.assertFalse(True, msg='record validation failed')
+
+        #
+        #setting decision index
+        #
         relation.set_decision_index(4)
 
         self.assertEqual(relation.get_decision_index(), 4)
@@ -91,6 +115,12 @@ class RelationsTestCase(TestCase):
         relation.set_decision_index(-5)
 
         self.assertEqual(relation.get_decision_index(), 4)
+
+        #this shoud fail because second param has decision_index=None
+        self.assertNotEqual(relation.header, Header(relation.attributes))
+
+        self.assertEqual(relation.header, Header(attributes=relation.attributes,
+                                                decision_index=4))
 
         cond_relation = relation.conditional_part
         dec_relation = relation.decisional_part
@@ -110,9 +140,30 @@ class RelationsTestCase(TestCase):
             self.assertSetEqual(attribute.values,
                                 set(["setosa", "versicolor", "virginica"]))
 
+        self.assertNotEqual(cond_relation.header, 1)
+        self.assertNotEqual(cond_relation.header, relation._header)
+
         relation.set_decision_index(None)
 
         self.assertEqual(relation.get_decision_index(), None)
 
-        cond_relation = relation.conditional_part
-        dec_relation = relation.decisional_part
+        cond_relation2 = relation.conditional_part
+        dec_relation2 = relation.decisional_part
+
+        self.assertEqual(len(cond_relation2), 150)
+        self.assertEqual(len(cond_relation2.attributes), 9)
+        self.assertEqual(len(dec_relation2), 150)
+        self.assertEqual(len(dec_relation2.attributes), 0)
+
+        self.assertEqual(cond_relation2.attributes[4].name, 'Species')
+        for attribute in cond_relation2.attributes:
+            if attribute.name == 'Species':
+                self.assertFalse(attribute.numeric)
+                self.assertTrue(attribute.discrete)
+                self.assertSetEqual(attribute.values,
+                                    set(["setosa", "versicolor", "virginica"]))
+            else:
+                self.assertTrue(attribute.numeric)
+                self.assertFalse(attribute.discrete)
+
+        self.assertEqual(cond_relation2.header, relation._header)

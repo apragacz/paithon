@@ -37,6 +37,17 @@ class AbstractAttribute(object):
     def initialized(self):
         pass
 
+    def __eq__(self, value):
+
+        try:
+            if self.__class__ != value.__class__:
+                return False
+            if self._name != value.name:
+                return False
+            return True
+        except Exception:
+            return False
+
 
 class NominalAttribute(AbstractAttribute):
 
@@ -55,6 +66,8 @@ class NominalAttribute(AbstractAttribute):
             raise ValidationError('%s not in %s' % (value, self._values))
 
     def __eq__(self, value):
+        if not super(NominalAttribute, self).__eq__(value):
+            return False
         if hasattr(value, '_values'):
             return (self._values == value._values)
         return False
@@ -96,13 +109,6 @@ class StringAttribute(AbstractAttribute):
     def initialized(self):
         return True
 
-    def __eq__(self, value):
-        if not isinstance(value, StringAttribute):
-            return False
-        if self._name != value.name:
-            return False
-        return True
-
 
 class NumericAttribute(AbstractAttribute):
 
@@ -125,13 +131,6 @@ class NumericAttribute(AbstractAttribute):
 
     @property
     def initialized(self):
-        return True
-
-    def __eq__(self, value):
-        if not isinstance(value, NumericAttribute):
-            return False
-        if self._name != value.name:
-            return False
         return True
 
 
