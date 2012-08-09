@@ -86,6 +86,12 @@ class RelationsTestCase(TestCase):
 
         relation.set_decision_index(4)
 
+        self.assertEqual(relation.get_decision_index(), 4)
+
+        relation.set_decision_index(-5)
+
+        self.assertEqual(relation.get_decision_index(), 4)
+
         cond_relation = relation.conditional_part
         dec_relation = relation.decisional_part
 
@@ -103,3 +109,10 @@ class RelationsTestCase(TestCase):
             self.assertTrue(attribute.discrete)
             self.assertSetEqual(attribute.values,
                                 set(["setosa", "versicolor", "virginica"]))
+
+        relation.set_decision_index(None)
+
+        self.assertEqual(relation.get_decision_index(), None)
+
+        cond_relation = relation.conditional_part
+        dec_relation = relation.decisional_part

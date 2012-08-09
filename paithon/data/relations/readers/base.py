@@ -1,10 +1,14 @@
-from paithon.core.exceptions import AbstractMethodError
+from abc import ABCMeta, abstractmethod
 
 
 class RecordReader(object):
 
-    def read_header(self):
-        raise AbstractMethodError()
+    __metaclass__ = ABCMeta
 
+    @abstractmethod
+    def read_header(self):
+        pass
+
+    @abstractmethod
     def read_record(self):
-        raise AbstractMethodError()
+        pass

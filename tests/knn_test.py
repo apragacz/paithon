@@ -1,7 +1,8 @@
 from unittest import TestCase
+
+from paithon.classifiers.knn import KNNClassifier
 from paithon.data.relations.relations import Relation
 from paithon.data.relations.readers.csv import SmartCSVReader
-from paithon.classifiers.knn import KNNClassifier
 
 
 class KNNTestCase(TestCase):

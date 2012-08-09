@@ -1,131 +1,9 @@
-from paithon.core.exceptions import AbstractMethodError, ValidationError
+from paithon.core.exceptions import ValidationError
+from paithon.data.relations.attributes import StringAttribute
 
 
 class HeaderValidationError(ValidationError):
     pass
-
-
-class AbstractAttribute(object):
-    def __init__(self, name):
-        self._name = name
-        self.initialize()
-
-    def initialize(self):
-        raise AbstractMethodError()
-
-    def load_values(self, values):
-        raise AbstractMethodError()
-
-    def validate(self, value):
-        raise AbstractMethodError()
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def discrete(self):
-        raise AbstractMethodError()
-
-    @property
-    def numeric(self):
-        raise AbstractMethodError()
-
-    @property
-    def initialized(self):
-        raise AbstractMethodError()
-
-
-class NominalAttribute(AbstractAttribute):
-    def initialize(self):
-        self._values = None
-
-    def load_values(self, values):
-        if not self._values:
-            self._values = set(values)
-
-    def to_python(self, input_value):
-        return str(input_value)
-
-    def __eq__(self, value):
-        if hasattr(value, '_values'):
-            return (self._values == value._values)
-        return False
-
-    @property
-    def discrete(self):
-        return True
-
-    @property
-    def numeric(self):
-        return False
-
-    @property
-    def initialized(self):
-        return bool(self._values)
-
-    @property
-    def values(self):
-        return self._values if self._values else set()
-
-
-class StringAttribute(AbstractAttribute):
-    def initialize(self):
-        pass
-
-    def to_python(self, input_value):
-        return str(input_value)
-
-    @property
-    def discrete(self):
-        return False
-
-    @property
-    def numeric(self):
-        return False
-
-    @property
-    def initialized(self):
-        return True
-
-    def __eq__(self, value):
-        if not isinstance(value, StringAttribute):
-            return False
-        if self._name != value.name:
-            return False
-        return True
-
-
-class NumericAttribute(AbstractAttribute):
-    def initialize(self):
-        pass
-
-    def to_python(self, input_value):
-        return float(input_value)
-
-    @property
-    def discrete(self):
-        return False
-
-    @property
-    def numeric(self):
-        return True
-
-    @property
-    def initialized(self):
-        return True
-
-    def __eq__(self, value):
-        if not isinstance(value, NumericAttribute):
-            return False
-        if self._name != value.name:
-            return False
-        return True
-
-
-class IntegerAttribute(NumericAttribute):
-    def to_python(self, input_value):
-        return int(input_value)
 
 
 class Header(object):
@@ -139,7 +17,10 @@ class Header(object):
         self._decision_index = decision_index
 
     def set_decision_index(self, index):
-        self._decision_index = index % len(self._attributes)
+        if index is None or not self._attributes:
+            self._decision_index = None
+        else:
+            self._decision_index = index % len(self._attributes)
 
     def get_decision_index(self):
         return self._decision_index

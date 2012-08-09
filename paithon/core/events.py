@@ -1,9 +1,13 @@
-from paithon.core.exceptions import AbstractMethodError
+from abc import ABCMeta, abstractmethod
 
 
 class EventListener(object):
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def on_event(self, event, source, params):
-        raise AbstractMethodError()
+        pass
 
 
 class EventDispatcherMixin(object):

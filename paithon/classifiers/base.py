@@ -1,6 +1,6 @@
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 
-from paithon.core.exceptions import AbstractMethodError
 from paithon.core.events import EventDispatcherMixin
 from paithon.core.taskinfos import TaskInfo, EVENT_TASK_INFO_CREATED
 
@@ -18,6 +18,9 @@ TASK_RANKING = 'classifier_ranking_calculation'
 
 
 class Classifier(EventDispatcherMixin):
+
+    __metaclass__ = ABCMeta
+
     def __init__(self, train_relation=None, **kwargs):
         super(Classifier, self).__init__()
         self.initialize()
@@ -25,20 +28,25 @@ class Classifier(EventDispatcherMixin):
         if train_relation is not None:
             self.train(train_relation)
 
+    @abstractmethod
     def initialize(self):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def get_params(self):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def set_params(self, params):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def train(self, train_relation):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def classify_record(self, cond_record, cond_header, dec_header):
-        raise AbstractMethodError()
+        pass
 
     def iter_classify(self, test_relation):
         task_info = TaskInfo(TASK_CLASSIFY, len(test_relation))
@@ -96,8 +104,11 @@ class Classifier(EventDispatcherMixin):
 
 class RankingClassifier(Classifier):
 
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def rank_record(self, cond_record, cond_header, decision):
-        raise AbstractMethodError()
+        pass
 
     def classify_record(self, cond_record, cond_header, dec_header):
         assert(len(dec_header.attributes) == 1)

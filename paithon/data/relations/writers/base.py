@@ -1,13 +1,18 @@
-from paithon.core.exceptions import AbstractMethodError
+from abc import ABCMeta, abstractmethod
 
 
 class RecordWriter(object):
 
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def write_header(self, header):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def write_record(self, record):
-        raise AbstractMethodError()
+        pass
 
+    @abstractmethod
     def write_footer(self):
-        raise AbstractMethodError()
+        pass
