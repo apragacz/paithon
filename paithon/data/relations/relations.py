@@ -39,7 +39,7 @@ class Relation(object):
     def attribute_values(self, attribute_index):
         return list(self.iter_attribute_values(attribute_index))
 
-    def split_by_column_values(self, attribute_index):
+    def split_by_attribute_values(self, attribute_index):
         cls = self.__class__
         sp = {}
 
@@ -48,6 +48,19 @@ class Relation(object):
             if value not in sp:
                 sp[value] = cls(header=self._header)
             sp[value].add_record(record)
+
+        return sp
+
+    def split_by_attribute_value_cut(self, attribute_index, cut_value):
+        cls = self.__class__
+        sp = (cls(header=self._header), cls(header=self._header))
+
+        for record in self._data:
+            value = record[attribute_index]
+            if value < cut_value:
+                sp[0].add_record(record)
+            else:
+                sp[1].add_record(record)
 
         return sp
 

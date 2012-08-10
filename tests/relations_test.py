@@ -47,15 +47,15 @@ class RelationsTestCase(TestCase):
         self.assertEqual(len(relation.sample_without_replacement(2)), 2)
         self.assertEqual(len(relation.sample_with_replacement(2)), 2)
 
-        split1 = relation.split_by_column_values(0)
+        split1 = relation.split_by_attribute_values(0)
         self.assertEqual(len(split1), 5)
 
-        split2 = relation.split_by_column_values(1)
+        split2 = relation.split_by_attribute_values(1)
         self.assertEqual(len(split2), 2)
         self.assertEqual(len(split2['2']), 2)
         self.assertEqual(len(split2['4']), 3)
 
-        split3 = relation.split_by_column_values(2)
+        split3 = relation.split_by_attribute_values(2)
         self.assertEqual(len(split3), 2)
         self.assertEqual(len(split3['Y']), 2)
         self.assertEqual(len(split3['N']), 3)
