@@ -105,6 +105,11 @@ class RelationsTestCase(TestCase):
         except ValidationError:
             self.assertFalse(True, msg='record validation failed')
 
+        for i, (cond_rec, dec_rec) in enumerate(
+                                relation.iter_conditional_decisional_records()):
+            self.assertEqual(cond_rec, relation[i])
+            self.assertEqual(dec_rec, ())
+
         #
         #setting decision index
         #
@@ -116,7 +121,7 @@ class RelationsTestCase(TestCase):
 
         self.assertEqual(relation.get_decision_index(), 4)
 
-        #this shoud fail because second param has decision_index=None
+        #equality shoud fail because second param has decision_index=None
         self.assertNotEqual(relation.header, Header(relation.attributes))
 
         self.assertEqual(relation.header, Header(attributes=relation.attributes,
@@ -142,6 +147,11 @@ class RelationsTestCase(TestCase):
 
         self.assertNotEqual(cond_relation.header, 1)
         self.assertNotEqual(cond_relation.header, relation._header)
+
+        for i, (cond_rec, dec_rec) in enumerate(
+                                relation.iter_conditional_decisional_records()):
+            self.assertEqual(cond_rec, cond_relation[i])
+            self.assertEqual(dec_rec, dec_relation[i])
 
         relation.set_decision_index(None)
 

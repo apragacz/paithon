@@ -144,6 +144,17 @@ class Relation(object):
             header = Header(attributes=decisional_attributes, decision_index=0)
         return self.__class__(data=decisional_data, header=header)
 
+    def iter_conditional_decisional_records(self):
+        i = self._header.get_decision_index()
+        if i is None:
+            for record in  self._data:
+                yield (record, ())
+        else:
+            for record in  self._data:
+                cond_record = record[:i] + record[(i + 1):]
+                dec_record = (record[i],)
+                yield (cond_record, dec_record)
+
     def __iter__(self):
         return iter(self._data)
 
