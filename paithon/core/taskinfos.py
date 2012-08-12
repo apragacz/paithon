@@ -1,4 +1,4 @@
-from paithon.core.events import EventDispatcherMixin
+from .events import EventDispatcherMixin
 
 EVENT_TASK_INFO_CREATED = 'task_info_created'
 EVENT_TASK_INFO_UPDATED = 'task_info_updated'

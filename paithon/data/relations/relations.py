@@ -1,5 +1,5 @@
 import random
-from paithon.data.relations.headers import Header
+from .headers import Header
 
 
 class Relation(object):

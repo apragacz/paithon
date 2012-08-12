@@ -1,5 +1,5 @@
 from paithon.data.relations.headers import Header
-from paithon.data.relations.writers.core import RecordWriter
+from .base import RecordWriter
 
 
 class RecordARFFWriter(RecordWriter):

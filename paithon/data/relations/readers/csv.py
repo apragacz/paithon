@@ -1,8 +1,10 @@
 from paithon.core.exceptions import AbstractMethodError, ValidationError
-from paithon.data.relations.attributes import (NumericAttribute,
+
+from ...relations.attributes import (NumericAttribute,
     NominalAttribute)
-from paithon.data.relations.headers import Header
-from paithon.data.relations.readers.base import RecordReader
+from ...relations.headers import Header
+
+from .base import RecordReader
 
 
 class AbstractRecordCSVReader(RecordReader):

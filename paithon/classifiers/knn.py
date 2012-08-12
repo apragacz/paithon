@@ -1,8 +1,10 @@
 import math
 
-from paithon.classifiers.base import RankingClassifier, ClassifierParams
 from paithon.core import distances
 from paithon.models.distances import DistanceModel
+
+from .base import RankingClassifier, ClassifierParams
+
 
 DISTANCE_EUCLIDEAN_SQ = distances.euclidean_squared
 DISTANCE_EUCLIDEAN = distances.euclidean
