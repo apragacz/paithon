@@ -9,22 +9,33 @@ class DecisionTree(Model):
         self._root = None
         self._disortion_measure = disortion_measure
 
-    def nominal_split(self, relation, attribute_index):
-        decision_index = relation.decision_index
-        dec_values = relation.attribute_values(decision_index)
-        gain = self._disortion_measure(dec_values)
-        sp = relation.split_by_attribute_values(attribute_index)
-        for value, sub_relation in sp.iteritems():
-            sub_dec_values = sub_relation.attribute_values(decision_index)
-            gain -= self._disortion_measure(sub_dec_values)
-        return (gain, sp, None)
+    def gain(self, all_values, values_split):
+        gain = self._disortion_measure(all_values)
+        for values in  values_split:
+            gain -= self._disortion_measure(values)
+        return gain
 
-    def numeric_split(self, relation, attribute_index, cut_value=None):
-        if cut_value is None:
-            values = set(relation.attribute_values(attribute_index))
-        #TODO:
+    def value_split(self, cond_dec_records, cond_attribute_index):
+        sp_dict = {}
+        for cond_rec, dec_rec in cond_dec_records:
+            cond_value = cond_rec[cond_attribute_index]
+            dec_value = dec_rec[0]
+            sp_dict.setdefault(cond_value, []).append(dec_value)
+        return sp_dict.values()
 
-    def build_node_recursive(self, relation):
+    def cut_split(self, cond_dec_records, cond_attribute_index, cut_value):
+        lt_values = []
+        gte_values = []
+        for cond_rec, dec_rec in cond_dec_records:
+            cond_value = cond_rec[cond_attribute_index]
+            dec_value = dec_rec[0]
+            if cond_value < cut_value:
+                lt_values.append(dec_value)
+            else:
+                gte_values.append(dec_value)
+        return [lt_values, gte_values]
+
+    def build_node_recursive(self, cond_dec_records):
         pass
 
 
@@ -56,8 +67,8 @@ class InequalityDecisionNode(DecisionNode):
 
     def __init__(self):
         super(InequalityDecisionNode, self).__init__()
+        self._cut_value = None
         self._lt_node = None
-        self._split_value = None
         self._gte_node = None
 
     @property
