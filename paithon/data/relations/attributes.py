@@ -17,6 +17,13 @@ class AbstractAttribute(object):
     def load_values(self, values):
         pass
 
+    def str_dump(self, value):
+        return str(value)
+
+    @abstractmethod
+    def to_python(self, input_value):
+        pass
+
     @abstractmethod
     def validate(self, value):
         pass

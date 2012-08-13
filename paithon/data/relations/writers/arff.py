@@ -9,23 +9,22 @@ class RecordARFFWriter(RecordWriter):
         self._header = Header()
 
     def str_dump(self, value, index):
-        #use attribute info in the future
-        return str(value)
+        return self._header[index].str_dump(value)
 
     def write_header(self, header):
         self._header = header
-        self._f.write('@relation unnamed\n')
+        self._f.write('@RELATION unnamed\n\n')
         for attribute in header.attributes:
             if attribute.numeric:
-                type_str = 'NUMERIC'
+                type_str = 'REAL'
             elif attribute.discrete:
                 dump = lambda ((i, v)): self.str_dump(v, i)
-                type_str = '{%s}' % (','.join(map(dump,
-                                                enumerate(attribute.values))))
+                attr_values = sorted(list(attribute.values))
+                type_str = '{%s}' % (','.join(map(dump, enumerate(attr_values))))
             else:
                 type_str = 'STRING'
-            self._f.write('@attribute %s %s\n' % (attribute.name, type_str))
-        self._f.write('@data\n')
+            self._f.write('@ATTRIBUTE %s %s\n' % (attribute.name, type_str))
+        self._f.write('\n@DATA\n')
 
     def write_record(self, record):
         dump = lambda ((i, v)): self.str_dump(v, i)

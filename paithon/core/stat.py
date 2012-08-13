@@ -18,7 +18,7 @@ def mean(values):
 def variance(values):
     assert(values)
     values = collection(values)
-    sum((x ** 2 for x in values)) / len(values) - mean(values) ** 2
+    return sum((x ** 2 for x in values)) / len(values) - mean(values) ** 2
 
 
 def mean_and_variance(values):
@@ -26,7 +26,7 @@ def mean_and_variance(values):
     return (mean(values), variance(values))
 
 
-def pearlson_correlation(values1, values2):
+def pearson_correlation(values1, values2):
     values1 = collection(values1)
     values2 = collection(values2)
     sum1 = sum(values1)
@@ -39,6 +39,14 @@ def pearlson_correlation(values1, values2):
 
     num = dot_product - (sum1 * sum2)
     den = math.sqrt(var1 * var2)
+
+    print dot_product
+    print sum1
+    print sum2
+
+    print sum_sq1
+    print sum1 ** 2
+
     return num / den
 
 
@@ -52,15 +60,15 @@ def distribution(values):
 
 
 def distribution_entropy(distribution, r=2):
-    return - sum((math.log(p, r) * p for _, p in distribution))
+    return - sum((math.log(p, r) * p for p in distribution.values()))
 
 
 def distribution_gini(distribution):
-    return 1 - sum((p ** 2 for _, p in distribution))
+    return 1 - sum((p ** 2 for p in distribution.values()))
 
 
-def entropy(values):
-    return distribution_entropy(distribution(values))
+def entropy(values, r=2):
+    return distribution_entropy(distribution(values), r=r)
 
 
 def gini(values):

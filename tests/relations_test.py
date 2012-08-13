@@ -6,12 +6,26 @@ from paithon.data.relations.readers.csv import (RecordNominalCSVReader,
     SmartCSVReader)
 from paithon.data.relations.relations import Relation
 
-csv_file_data1 = """attr,attr2,attr3
+csv_file_data1 = """attr1,attr2,attr3
 1,2,Y
 2,4,Y
 3,4,N
 5,2,N
 6,4,N"""
+
+arff_file_data1 = """@RELATION unnamed
+
+@ATTRIBUTE attr1 {1,2,3,5,6}
+@ATTRIBUTE attr2 {2,4}
+@ATTRIBUTE attr3 {N,Y}
+
+@DATA
+1,2,Y
+2,4,Y
+3,4,N
+5,2,N
+6,4,N
+"""
 
 
 class ReadableFileMock(object):
@@ -25,6 +39,17 @@ class ReadableFileMock(object):
             return '%s\n' % self._datalines.pop(0)
         else:
             return ''
+
+
+class WritableFileMock(object):
+    def __init__(self):
+        self._data = ''
+
+    def write(self, data):
+        self._data += data
+
+    def get_data(self):
+        return self._data
 
 
 class RelationsTestCase(TestCase):

@@ -120,7 +120,6 @@ class DecisionTree(Model):
                                                         cond_dec_records_copy)
 
 
-
 class DecisionNode(object):
 
     __metaclass__ = ABCMeta
