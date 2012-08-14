@@ -1,7 +1,8 @@
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
+from collections import Counter
 
-from .base import Model
 from ..core.stat import collection
+from .base import Model
 
 
 class HashableSlice(slice):
@@ -84,56 +85,91 @@ class DecisionTree(Model):
 
         return max(generate_splits(), key=lambda x: x[0])[1:2]
 
-    def build_node_recursive(self, cond_dec_records, cond_attributes):
-        (spd, i) = self.find_best_split_dict(cond_dec_records, cond_attributes)
-        if (len(spd) == 2 and isinstance(spd.keys()[0], slice)
-                and isinstance(spd.keys()[1], slice)):
-            #cut split
-            slice1, slice2 = spd.keys()
-            cut_value = None
-            gte_split = None
-            lt_split = None
-            if slice1.start is not None:
-                cut_value = slice1.start
-                lt_split = spd[slice2]
-                gte_split = spd[slice1]
-            else:
-                cut_value = slice1.stop
-                lt_split = spd[slice1]
-                gte_split = spd[slice2]
+    def build_node_recursive(self, cond_dec_records, cond_attributes,
+                                depth=None):
+        cond_dec_records = collection(cond_dec_records)
+        decisions_counter = Counter(self.iter_decisions(cond_dec_records))
 
-            node = InequalityDecisionNode()
-            node._cut_value = cut_value
-            node._lt_node = self.build_node_recursive(lt_split,
-                                                        cond_attributes)
-            node._gte_node = self.build_node_recursive(gte_split,
-                                                        cond_attributes)
-            return node
+        if depth is None:
+            sub_depth = None
+        else:
+            sub_depth = depth - 1
+
+        assert(decisions_counter)
+
+        if (depth == 0 or len(decisions_counter) == 1
+                or not filter(None, cond_attributes)):
+            # all decisions are the same
+            # or all attributes were used previously in decision making
+            # or tree is too big - use majority voting
+            node = LeafDecisionNode()
+            node._decision = decisions_counter.most_common(1)[0][0]
 
         else:
-            cond_dec_records_copy = cond_dec_records[:]
-            cond_dec_records_copy[i] = None
-            node = EqualityDecisionNode()
-            node._node_map = {}
-            for value, value_split in spd.iteritems():
-                node._node_map[value] = self.build_node_recursive(value_split,
-                                                        cond_dec_records_copy)
+            #find the best split
+            (spd, i) = self.find_best_split_dict(cond_dec_records,
+                                                    cond_attributes)
+            if (len(spd) == 2 and isinstance(spd.keys()[0], slice)
+                    and isinstance(spd.keys()[1], slice)):
+                #cut split (<)
+                slice1, slice2 = spd.keys()
+                cut_value = None
+                gte_split = None
+                lt_split = None
+                if slice1.start is not None:
+                    cut_value = slice1.start
+                    lt_split = spd[slice2]
+                    gte_split = spd[slice1]
+                else:
+                    cut_value = slice1.stop
+                    lt_split = spd[slice1]
+                    gte_split = spd[slice2]
+
+                node = InequalityDecisionNode()
+                node._cut_value = cut_value
+                node._lt_node = self.build_node_recursive(lt_split,
+                                                            cond_attributes,
+                                                            sub_depth)
+                node._gte_node = self.build_node_recursive(gte_split,
+                                                            cond_attributes,
+                                                            sub_depth)
+
+            else:
+                #value split (==)
+
+                #disabling attribute to be selected in subtree
+                cond_dec_records_copy = cond_dec_records[:]
+                cond_dec_records_copy[i] = None
+                node = EqualityDecisionNode()
+                node._node_map = {}
+                for value, value_split in spd.iteritems():
+                    node._node_map[value] = self.build_node_recursive(
+                                                        value_split,
+                                                        cond_dec_records_copy,
+                                                        sub_depth)
+        return node
 
 
 class DecisionNode(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self._attribute = None
-        self._attribute_index = None
-
     @abstractproperty
     def children(self):
         pass
 
+    @abstractmethod
+    def decision(self, cond_record):
+        pass
 
-class EqualityDecisionNode(DecisionNode):
+
+class TestDecisionNode(DecisionNode):
+
+    def __init__(self):
+        self._attribute_index = None
+
+
+class EqualityDecisionNode(TestDecisionNode):
 
     def __init__(self):
         super(EqualityDecisionNode, self).__init__()
@@ -143,8 +179,12 @@ class EqualityDecisionNode(DecisionNode):
     def children(self):
         return self._node_map.values()
 
+    def decision(self, cond_record):
+        value = cond_record[self._attribute_index]
+        return self._node_map[value].decision(cond_record)
 
-class InequalityDecisionNode(DecisionNode):
+
+class InequalityDecisionNode(TestDecisionNode):
 
     def __init__(self):
         super(InequalityDecisionNode, self).__init__()
@@ -160,3 +200,22 @@ class InequalityDecisionNode(DecisionNode):
         if self._gte_node:
             result.append(self._gte_node)
         return result
+
+    def decision(self, cond_record):
+        value = cond_record[self._attribute_index]
+        node = self._lt_node if value < self._cut_value else self._gte_node
+        return node.decision(cond_record)
+
+
+class LeafDecisionNode(DecisionNode):
+
+    def __init__(self):
+        super(LeafDecisionNode, self).__init__()
+        self._decision = None
+
+    @property
+    def children(self):
+        return []
+
+    def decision(self, cond_record):
+        return self._decision
