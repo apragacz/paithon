@@ -6,7 +6,7 @@ def collection(x):
     if hasattr(x, '__len__'):
         return x
     else:
-        return list(x)
+        return tuple(x)
 
 
 def mean(values):
@@ -26,26 +26,29 @@ def mean_and_variance(values):
     return (mean(values), variance(values))
 
 
+def covariance(values1, values2):
+    assert(values1)
+    assert(values2)
+    values1 = collection(values1)
+    values2 = collection(values2)
+    dot_product = sum((x * y for x, y in zip(values1, values2)))
+    return dot_product / len(values1) - mean(values1) * mean(values2)
+
+
 def pearson_correlation(values1, values2):
     values1 = collection(values1)
     values2 = collection(values2)
     sum1 = sum(values1)
     sum2 = sum(values2)
+    n = len(values1)
     sum_sq1 = sum((x ** 2 for x in values1))
     sum_sq2 = sum((x ** 2 for x in values2))
-    var1 = sum_sq1 - sum1 ** 2
-    var2 = sum_sq2 - sum2 ** 2
+    var1 = n * sum_sq1 - sum1 ** 2
+    var2 = n * sum_sq2 - sum2 ** 2
     dot_product = sum((x1 * x2 for x1, x2 in zip(values1, values2)))
 
-    num = dot_product - (sum1 * sum2)
+    num = n * dot_product - (sum1 * sum2)
     den = math.sqrt(var1 * var2)
-
-    print dot_product
-    print sum1
-    print sum2
-
-    print sum_sq1
-    print sum1 ** 2
 
     return num / den
 
