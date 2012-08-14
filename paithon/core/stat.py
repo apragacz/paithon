@@ -53,7 +53,7 @@ def pearson_correlation(values1, values2):
     return num / den
 
 
-def distribution(values):
+def discrete_distribution(values):
     distribution = {}
     c = Counter(values)
     total_counter = float(sum((counter for _, counter in  c.most_common())))
@@ -62,17 +62,17 @@ def distribution(values):
     return distribution
 
 
-def distribution_entropy(distribution, r=2):
-    return - sum((math.log(p, r) * p for p in distribution.values()))
+def distribution_entropy(discrete_distribution, r=2):
+    return - sum((math.log(p, r) * p for p in discrete_distribution.values()))
 
 
-def distribution_gini(distribution):
-    return 1 - sum((p ** 2 for p in distribution.values()))
+def distribution_gini(discrete_distribution):
+    return 1 - sum((p ** 2 for p in discrete_distribution.values()))
 
 
 def entropy(values, r=2):
-    return distribution_entropy(distribution(values), r=r)
+    return distribution_entropy(discrete_distribution(values), r=r)
 
 
 def gini(values):
-    return distribution_gini(distribution(values))
+    return distribution_gini(discrete_distribution(values))
