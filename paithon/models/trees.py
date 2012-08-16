@@ -1,14 +1,8 @@
 from abc import ABCMeta, abstractproperty, abstractmethod
 from collections import Counter
 
-from ..core.stat import collection
+from ..core.types import HashableSlice, sequence
 from .base import Model
-
-
-class HashableSlice(slice):
-
-    def __hash__(self):
-        return hash(self.start) + hash(self.stop) + hash(self.step)
 
 
 class DecisionTree(Model):
@@ -87,7 +81,7 @@ class DecisionTree(Model):
 
     def build_node_recursive(self, cond_dec_records, cond_attributes,
                                 depth=None):
-        cond_dec_records = collection(cond_dec_records)
+        cond_dec_records = sequence(cond_dec_records)
         decisions_counter = Counter(self.iter_decisions(cond_dec_records))
 
         if depth is None:

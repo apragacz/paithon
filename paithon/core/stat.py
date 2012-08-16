@@ -1,43 +1,38 @@
 import math
 from collections import Counter
 
-
-def collection(x):
-    if hasattr(x, '__len__'):
-        return x
-    else:
-        return tuple(x)
+from .types import sequence
 
 
 def mean(values):
     assert(values)
-    values = collection(values)
+    values = sequence(values)
     return sum(values) / len(values)
 
 
 def variance(values):
     assert(values)
-    values = collection(values)
+    values = sequence(values)
     return sum((x ** 2 for x in values)) / len(values) - mean(values) ** 2
 
 
 def mean_and_variance(values):
-    values = collection(values)
+    values = sequence(values)
     return (mean(values), variance(values))
 
 
 def covariance(values1, values2):
     assert(values1)
     assert(values2)
-    values1 = collection(values1)
-    values2 = collection(values2)
+    values1 = sequence(values1)
+    values2 = sequence(values2)
     dot_product = sum((x * y for x, y in zip(values1, values2)))
     return dot_product / len(values1) - mean(values1) * mean(values2)
 
 
 def pearson_correlation(values1, values2):
-    values1 = collection(values1)
-    values2 = collection(values2)
+    values1 = sequence(values1)
+    values2 = sequence(values2)
     sum1 = sum(values1)
     sum2 = sum(values2)
     n = len(values1)
