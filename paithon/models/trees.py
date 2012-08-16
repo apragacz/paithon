@@ -7,7 +7,7 @@ from .base import Model
 
 class DecisionTree(Model):
     def __init__(self, disortion_measure):
-        self._root = None
+        self._root_node = None
         self._disortion_measure = disortion_measure
 
     def gain(self, all_dec_values, dec_values_split):
@@ -74,10 +74,12 @@ class DecisionTree(Model):
                         for cond_value in cond_values:
                             spd = self.cut_split_dict(cond_dec_records, i,
                                                         cond_value)
-                            score = self.score(cond_dec_records, spd)
-                            yield (score, spd, i)
+                            split = spd.values()
+                            if split[0] and split[1]:
+                                score = self.score(cond_dec_records, spd)
+                                yield (score, spd, i)
 
-        return max(generate_splits(), key=lambda x: x[0])[1:2]
+        return max(generate_splits(), key=lambda x: x[0])[1:3]
 
     def build_node_recursive(self, cond_dec_records, cond_attributes,
                                 depth=None):
@@ -103,8 +105,8 @@ class DecisionTree(Model):
             #find the best split
             (spd, i) = self.find_best_split_dict(cond_dec_records,
                                                     cond_attributes)
-            if (len(spd) == 2 and isinstance(spd.keys()[0], slice)
-                    and isinstance(spd.keys()[1], slice)):
+            if (len(spd) == 2 and isinstance(spd.keys()[0], HashableSlice)
+                    and isinstance(spd.keys()[1], HashableSlice)):
                 #cut split (<)
                 slice1, slice2 = spd.keys()
                 cut_value = None
@@ -120,6 +122,7 @@ class DecisionTree(Model):
                     gte_split = spd[slice2]
 
                 node = InequalityDecisionNode()
+                node._attribute_index = i
                 node._cut_value = cut_value
                 node._lt_node = self.build_node_recursive(lt_split,
                                                             cond_attributes,
@@ -132,16 +135,24 @@ class DecisionTree(Model):
                 #value split (==)
 
                 #disabling attribute to be selected in subtree
-                cond_dec_records_copy = cond_dec_records[:]
-                cond_dec_records_copy[i] = None
+                cond_attributes_copy = cond_attributes[:]
+                cond_attributes_copy[i] = None
                 node = EqualityDecisionNode()
+                node._attribute_index = i
                 node._node_map = {}
                 for value, value_split in spd.iteritems():
                     node._node_map[value] = self.build_node_recursive(
                                                         value_split,
-                                                        cond_dec_records_copy,
+                                                        cond_attributes_copy,
                                                         sub_depth)
         return node
+
+    def build(self, cond_dec_records, cond_attributes, depth=None):
+        self._root_node = self.build_node_recursive(cond_dec_records,
+                                                    cond_attributes, depth)
+
+    def decision(self, cond_record):
+        return self._root_node.decision(cond_record)
 
 
 class DecisionNode(object):

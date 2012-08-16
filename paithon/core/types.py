@@ -1,5 +1,10 @@
 class HashableSlice(object):
 
+    def __init__(self, start=None, stop=None, step=None):
+        self.start = start
+        self.stop = stop
+        self.step = step
+
     def get_slice(self):
         return slice(self.start, self.stop, self.step)
 
