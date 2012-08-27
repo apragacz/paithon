@@ -110,14 +110,22 @@ class RankingClassifier(Classifier):
     def rank_record(self, cond_record, cond_header, decision):
         pass
 
+    def classify_rank_begin(self, cond_record, cond_header, dec_header):
+        pass
+
+    def classify_rank_end(self, cond_record, cond_header, dec_header):
+        pass
+
     def classify_record(self, cond_record, cond_header, dec_header):
         assert(len(dec_header.attributes) == 1)
         dec_attr = dec_header.attributes[0]
         assert(dec_attr.discrete)
         assert(dec_attr.values)
+        self.classify_rank_begin(cond_record, cond_header, dec_header)
         ranking = [(self.rank_record(cond_record, cond_header, decision),
                         decision)
                     for decision in dec_attr.values]
+        self.classify_rank_end(cond_record, cond_header, dec_header)
         return max(ranking, key=lambda x: x[0])[1]
 
     def iter_rank(self, test_relation, decision):
