@@ -1,4 +1,4 @@
-from paithon.core.exceptions import AbstractMethodError, ValidationError
+from ....core.exceptions import AbstractMethodError, ValidationError
 
 from ...relations.attributes import (NumericAttribute,
     NominalAttribute)

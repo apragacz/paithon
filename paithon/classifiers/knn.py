@@ -1,7 +1,7 @@
 import math
 
-from paithon.core import distances
-from paithon.models.distances import DistanceModel
+from ..core import distances
+from ..models.distances import DistanceModel
 
 from .base import RankingClassifier, ClassifierParams
 

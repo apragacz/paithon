@@ -1,5 +1,5 @@
-from paithon.core.exceptions import ValidationError
-from paithon.data.relations.attributes import StringAttribute
+from ...core.exceptions import ValidationError
+from ..relations.attributes import StringAttribute
 
 
 class HeaderValidationError(ValidationError):

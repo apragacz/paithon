@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 
-from paithon.core.events import EventDispatcherMixin
-from paithon.core.taskinfos import TaskInfo, EVENT_TASK_INFO_CREATED
+from ..core.events import EventDispatcherMixin
+from ..core.taskinfos import TaskInfo, EVENT_TASK_INFO_CREATED
 
 
 class ClassifierParams(dict):

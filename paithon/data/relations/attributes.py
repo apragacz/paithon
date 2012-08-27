@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-from paithon.core.exceptions import ValidationError
+from ...core.exceptions import ValidationError
 
 
 class AbstractAttribute(object):
