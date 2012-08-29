@@ -17,6 +17,7 @@ class Percepton(Model):
 
     def __init__(self, num_of_inputs, rnd=None,
             threshold_function=None, threshold_derivative_function=None):
+        self._last_output = None
 
         if not rnd:
             rnd = random.Random()
@@ -36,8 +37,9 @@ class Percepton(Model):
             self._weigths.append(rnd.uniform(0.0, 1.0))
 
     def output(self, inputs):
-        return self._threshold_fun(sum((w * x for w, x
-                                        in zip(self._weigths, inputs))))
+        self._last_output = self._threshold_fun(sum((w * x for w, x
+                                                in zip(self._weigths, inputs))))
+        return self._last_output
 
 
 class PerceptonLayer(Model):
